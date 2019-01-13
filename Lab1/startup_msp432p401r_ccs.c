@@ -49,14 +49,15 @@ extern void _c_int00(void);
 
 /* External declaration for system initialization function                  */
 extern void SystemInit(void);
-extern void EUSCIA2_IRQHandler(void);
+
 /* Linker variable that marks the top of the stack. */
 extern unsigned long __STACK_END;
 
 
 /* External declarations for the interrupt handlers used by the application. */
 
-/* To be added by user */
+extern void EUSCIA2_IRQHandler(void);
+extern  void TA0_0_IRQHandler(void);
 
 
 /* Interrupt vector table.  Note that the proper constructs must be placed on this to  */
@@ -91,7 +92,7 @@ void (* const interruptVectors[])(void) =
     defaultISR,                             /* FLCTL ISR                 */
     defaultISR,                             /* COMP0 ISR                 */
     defaultISR,                             /* COMP1 ISR                 */
-    defaultISR,                             /* TA0_0 ISR                 */
+    TA0_0_IRQHandler,                             /* TA0_0 ISR                 */
     defaultISR,                             /* TA0_N ISR                 */
     defaultISR,                             /* TA1_0 ISR                 */
     defaultISR,                             /* TA1_N ISR                 */

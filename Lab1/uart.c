@@ -1,23 +1,22 @@
 #include "uart.h"
 #include "driverlib.h"
 
-
 #define BUFFER_SIZE 100
 
-
-int buffer_index; // Current place in buffer
+volatile int buffer_index; // Current place in buffer
 
 volatile uint8_t received_data = 0;
 
 volatile uint8_t buffer[BUFFER_SIZE];
 
-int blink_rate;
+volatile int blink_rate; // Blink rate in blinks per minute
 
 int i;
 
 void UART2_init() /* Initialize UART */
 
 {
+
     EUSCI_A2 -> CTLW0 |= 1; /* put in reset mode for config*/
     EUSCI_A2 -> MCTLW = 0;  /* disable over-sampling */
     EUSCI_A2 -> CTLW0 = 0x0081; /* 1 stop bit, no parity, SMCLK, 8 bit data*/
@@ -29,19 +28,20 @@ void UART2_init() /* Initialize UART */
     EUSCI_A2 -> CTLW0 &= ~ 1; /* take UART out of reset mode*/
 
     /* Enabling interrupts (UART) */
+    MAP_UART_enableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
 
-        MAP_UART_enableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
+    MAP_Interrupt_enableInterrupt(INT_EUSCIA2);
 
-        MAP_Interrupt_enableInterrupt(INT_EUSCIA2);
+    MAP_Interrupt_enableMaster();
 
-        MAP_Interrupt_enableMaster();
-        /*clear buffer*/
+    /*clear buffer*/
+    for (i=0;i<BUFFER_SIZE;i++)
+    {
+        buffer[i]=0;
+    }
 
-        for (i=0;i<BUFFER_SIZE;i++)
-        {
-            buffer[i]=0;
-        }
-
+    // Set initial blink rate
+    blink_rate = 60;
 }
 
 void EUSCIA2_IRQHandler(void)
@@ -55,7 +55,7 @@ void EUSCIA2_IRQHandler(void)
     {
         // Toggle LED to show data was received
 
-        P1OUT ^= BIT0;
+        //P1OUT ^= BIT0;
 
         received_data = MAP_UART_receiveData(EUSCI_A2_BASE);
 
@@ -112,4 +112,8 @@ void check_buffer(void)
         buffer_index=0;
     }
 
+}
+
+int get_blink_rate(){
+    return blink_rate;
 }
