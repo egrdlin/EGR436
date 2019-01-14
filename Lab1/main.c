@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "msp.h"
 #include "timers.h"
 #include "uart.h"
@@ -7,7 +9,7 @@ int main(void) {
             WDT_A_CTL_HOLD;
 
     // Initialize UART and Timers
-    UART2_init();
+    UART_init();
     Init_TA0();
 
     // Configure GPIO

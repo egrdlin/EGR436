@@ -36,11 +36,18 @@ void TA0_0_IRQHandler() {
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
     count++;
     int blink_rate = get_blink_rate();
-    if(count == blink_rate - 5){
+    if(count == blink_rate - 5 || blink_rate <= 5){
         P1->OUT |= BIT0;    // Turn on P1.0 LED
     }else if (count == blink_rate){
         P1->OUT &= ~BIT0;    // Turn off P1.0 LED
         count = 0;          // Reset count
     }
 
+}
+
+/*
+ * Reset the count value when the blink rate is updated.
+ */
+void reset_count(){
+    count = 0;
 }

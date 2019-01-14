@@ -3,5 +3,6 @@
 
 void Init_TA0();
 //void TA0_0_IRQHandler();
+void reset_count();
 
 #endif
