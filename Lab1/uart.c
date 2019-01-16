@@ -8,7 +8,7 @@ volatile int buffer_index; // Current place in buffer
 
 volatile uint8_t received_data = 0;
 
-volatile uint8_t buffer[BUFFER_SIZE];
+volatile char buffer[BUFFER_SIZE];
 
 volatile int blink_rate; // Blink rate in blinks per minute
 
@@ -133,7 +133,7 @@ void UART_init(){
     CS->KEY = CS_KEY_VAL;                   // Unlock CS module for register access
     CS->CTL0 = 0;                           // Reset tuning parameters
     CS->CTL0 = CS_CTL0_DCORSEL_3;           // Set DCO to 12MHz (nominal, center of 8-16MHz range)
-    CS->CTL1 = CS_CTL1_SELA_2 |             // Select ACLK = REFO
+    CS->CTL1 = CS_CTL1_SELA_2 |             // Select ACLK = REFO = 32.768kHz
             CS_CTL1_SELS_3 |                // SMCLK = DCO
             CS_CTL1_SELM_3;                 // MCLK = DCO
     CS->KEY = 0;                            // Lock CS module from unintended accesses
@@ -240,12 +240,15 @@ int update_blink_rate(uint16_t input_char){
  * Clear the local buffer used to store received UART data only up to the current index.
  */
 void clear_buffer_at_index(){
+if(buffer_index == BUFFER_SIZE-1){
+
     for (i=0;i<=buffer_index;i++)
     {
         buffer[i]=0;
     }
 
     buffer_index=0;
+}
 }
 
 /*

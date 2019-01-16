@@ -18,6 +18,7 @@ int main(void) {
 
     //SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Enable sleep on exit from ISR
 
+
     while(1);
     //__sleep();
     //__no_operation();
