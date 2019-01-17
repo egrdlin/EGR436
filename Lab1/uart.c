@@ -139,24 +139,27 @@ void UART_init(){
     CS->KEY = 0;                            // Lock CS module from unintended accesses
 
     // Configure UART pins
-    P1->SEL0 |= BIT2 | BIT3;                // set 2-UART pin as secondary function
-
+    //P1->SEL0 |= BIT2 | BIT3;                // set 2-UART pin as secondary function
+    P3->SEL0 |= 0x0C;                       // P3.3 and P3.2 configured for UART2
+    P3->SEL1 &= ~0x0C;
     // Configure UART
-    EUSCI_A0->CTLW0 |= EUSCI_A_CTLW0_SWRST; // Put eUSCI in reset
-    EUSCI_A0->CTLW0 = EUSCI_A_CTLW0_SWRST | // Remain eUSCI in reset
-            EUSCI_B_CTLW0_SSEL__SMCLK;      // Configure eUSCI clock source for SMCLK
-    // Baud Rate calculation
+    EUSCI_A2->CTLW0 |= EUSCI_A_CTLW0_SWRST; // Put eUSCI in reset STATE
+    EUSCI_A2->CTLW0 = EUSCI_A_CTLW0_SWRST | // Remain eUSCI in reset
+            EUSCI_B_CTLW0_SSEL__SMCLK;      // Configure eUSCI clock source for SMCLK, 1 stop bit, no parity, 8-bit data
+    /*Baud Rate calculation
     // 12000000/(16*9600) = 78.125
     // Fractional portion = 0.125
     // User's Guide Table 21-4: UCBRSx = 0x10
-    // UCBRFx = int ( (78.125-78)*16) = 2
-    EUSCI_A0->BRW = 78;                     // 12000000/16/9600
-    EUSCI_A0->MCTLW = (2 << EUSCI_A_MCTLW_BRF_OFS) |
-            EUSCI_A_MCTLW_OS16;
+    //UCBRFx = int ( (78.125-78)*16) = 2
+     */
 
-    EUSCI_A0->CTLW0 &= ~EUSCI_A_CTLW0_SWRST; // Initialize eUSCI
-    EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
-    EUSCI_A0->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
+    EUSCI_A2->BRW = 78;                     // 12000000/16/9600
+    EUSCI_A2->MCTLW = (2 << EUSCI_A_MCTLW_BRF_OFS) |
+            EUSCI_A_MCTLW_OS16;  // enable over sampling mode
+
+    EUSCI_A2->CTLW0 &= ~EUSCI_A_CTLW0_SWRST; // take UART2 out of reset mode
+    EUSCI_A2->IFG &= ~EUSCI_A_IFG_RXIFG;    // Clear eUSCI RX interrupt flag
+    EUSCI_A2->IE |= EUSCI_A_IE_RXIE;        // Enable USCI_A0 RX interrupt
 
     // Enable eUSCIA0 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA0_IRQn) & 31);
@@ -171,15 +174,15 @@ void UART_init(){
  * EUSCI A0 UART interrupt service routine
  * Code used from Resource Explorer example: msp432p401x_euscia0_uart_01 - eUSCI_A0 UART echo at 9600 baud using BRCLK = 12MHz
  */
-void EUSCIA0_IRQHandler(void)
+void EUSCIA2_IRQHandler(void)
 {
-    if (EUSCI_A0->IFG & EUSCI_A_IFG_RXIFG)
+    if (EUSCI_A2->IFG & EUSCI_A_IFG_RXIFG)
     {
         // Check if the TX buffer is empty first
-        while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG));
+        while(!(EUSCI_A2->IFG & EUSCI_A_IFG_TXIFG));
 
         // Get character from RX buffer
-        uint16_t received_char = EUSCI_A0->RXBUF;
+        uint16_t received_char = EUSCI_A2->RXBUF;
 
         // Place received character into local buffer
         buffer[buffer_index]= received_char;
@@ -191,7 +194,7 @@ void EUSCIA0_IRQHandler(void)
         update_blink_rate(received_char);
 
         // Echo the received character back
-        EUSCI_A0->TXBUF = EUSCI_A0->RXBUF;
+        EUSCI_A2->TXBUF = EUSCI_A2->RXBUF;
     }
 }
 
