@@ -1,8 +1,12 @@
+#include <stdio.h>
+#include <string.h>
 #include "uart.h"
 #include "driverlib.h"
 #include "timers.h"
 
 #define BUFFER_SIZE 100
+
+const char end_char = '\0';
 
 volatile int buffer_index; // Current place in buffer
 
@@ -13,109 +17,6 @@ volatile char buffer[BUFFER_SIZE];
 volatile int blink_rate; // Blink rate in blinks per minute
 
 int i;
-
-const int DEFAULT_BLINK_RATE = 60;
-
-//void UART2_init() /* Initialize UART */
-//
-//{
-//
-//    EUSCI_A2 -> CTLW0 |= 1; /* put in reset mode for config*/
-//    EUSCI_A2 -> MCTLW = 0;  /* disable over-sampling */
-//    EUSCI_A2 -> CTLW0 = 0x0081; /* 1 stop bit, no parity, SMCLK, 8 bit data*/
-//    EUSCI_A2 -> BRW = 26; /* 3,000,000 Hz / 115200 (Baud rate) = 26 */
-//
-//    P3->SEL0 |= 0x0C; /*conf P3.2 and P3.3 for UART*/
-//    P3->SEL1 &=~ 0x0C;
-//
-//    EUSCI_A2 -> CTLW0 &= ~ 1; /* take UART out of reset mode*/
-//
-//    /* Enabling interrupts (UART) */
-//    MAP_UART_enableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
-//
-//    MAP_Interrupt_enableInterrupt(INT_EUSCIA2);
-//
-//    MAP_Interrupt_enableMaster();
-//
-//    /*clear buffer*/
-//    for (i=0;i<BUFFER_SIZE;i++)
-//    {
-//        buffer[i]=0;
-//    }
-//
-//    // Set initial blink rate
-//    blink_rate = 60;
-//}
-
-//void EUSCIA2_IRQHandler(void)
-//{
-//    uint32_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A2_BASE);
-//
-//    MAP_UART_clearInterruptFlag(EUSCI_A2_BASE, status);
-//
-//    if(status & EUSCI_A_UART_RECEIVE_INTERRUPT)
-//
-//    {
-//        // Toggle LED to show data was received
-//
-//        //P1OUT ^= BIT0;
-//
-//        received_data = MAP_UART_receiveData(EUSCI_A2_BASE);
-//
-//        // Restart buffer if reached maximum
-//
-//        if(buffer_index>BUFFER_SIZE-1) {
-//
-//            buffer_index=0;
-//        }
-//
-//        // Store data in buffer.
-//
-//        // Not using a buffer causes problems with data being received too quickly.
-//
-//        buffer[buffer_index++]= received_data;
-//
-//        MAP_UART_transmitData(EUSCI_A2_BASE, received_data);  // send byte out UART2 port
-//
-//    }
-//}
-
-//void check_buffer(void)
-//{
-//    if(buffer[buffer_index] == '\n')
-//    {
-//
-//        if(buffer_index==1)
-//        {
-//            switch(buffer[0])
-//            {
-//            case 'd':
-//            /* baud rate decreases by 2bpm */
-//            /* LED blink rate decreases by 2bpm */
-//                blink_rate -= 2;
-//                break;
-//            case 'u':
-//                /* baud rate increases by 2bpm */
-//                /* LED blink rate increases by 2bpm */
-//                blink_rate += 2;
-//                break;
-//            case 'r':
-//                /*reset blink rate to 60 bpm */
-//                blink_rate = 60;
-//                break;
-//            }
-//        }
-//
-//        /* clear buffer*/
-//        for (i=0;i<=buffer_index;i++)
-//        {
-//            buffer[i]=0;
-//        }
-//
-//        buffer_index=0;
-//    }
-//
-//}
 
 /*
  * Get the blink rate.
@@ -161,10 +62,7 @@ void UART_init(){
     // Enable eUSCIA0 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA0_IRQn) & 31);
 
-    clear_buffer_full();
-
-    // Set initial blink rate
-    blink_rate = DEFAULT_BLINK_RATE;
+    clear_buffer();
 }
 
 /*
@@ -188,77 +86,69 @@ void EUSCIA0_IRQHandler(void)
         (buffer_index>BUFFER_SIZE-1) ? buffer_index=0 : buffer_index++;
 
         // Update blink rate
-        update_blink_rate(received_char);
+        update_blink_rate();
 
         // Echo the received character back
-        EUSCI_A0->TXBUF = EUSCI_A0->RXBUF;
+        //EUSCI_A0->TXBUF = EUSCI_A0->RXBUF;
     }
 }
 
 /*
- * Update the blink rate based on input character.
- * @param input_char User input to change blink rate
- *      d: Decrease blink rate by 2bpm
- *      u: Increase blink rate by 2pbm
- *      r: Reset blink rate to 60bpm
- * @return Status of update
- *      0: Error occurred, could not update
- *      1: Successfully updated
+ * Update the blink rate based on the received buffer.
  */
-int update_blink_rate(uint16_t input_char){
-    int update_status = 0;
+void update_blink_rate(){
 
-    switch(input_char){
-        case 'd':
-            /* baud rate decreases by 2bpm */
-            /* LED blink rate decreases by 2bpm */
-            (blink_rate >= 2) ?  (blink_rate -= 2) : (blink_rate = 0);
-            update_status = 1;
-            reset_count();
-            break;
-        case 'u':
-            /* baud rate increases by 2bpm */
-            /* LED blink rate increases by 2bpm */
-            blink_rate += 2;
-            update_status = 1;
-            reset_count();
-            break;
-        case 'r':
-            /*reset blink rate to 60 bpm */
-            blink_rate = DEFAULT_BLINK_RATE;
-            update_status = 1;
-            reset_count();
-            break;
+    int new_blink_rate;
+
+    // Check if received end of message character
+    if(buffer_index > 0 && buffer[buffer_index-1] == end_char){
+
+        // Convert character array to integer starting after first character
+        sscanf(buffer, "%d", &new_blink_rate);
+        blink_rate = new_blink_rate;
+        reset_count();
+        tx_baud_rate();
+
+        clear_buffer();
     }
-
-    clear_buffer_at_index();
-
-    return update_status;
-}
-
-/*
- * Clear the local buffer used to store received UART data only up to the current index.
- */
-void clear_buffer_at_index(){
-if(buffer_index == BUFFER_SIZE-1){
-
-    for (i=0;i<=buffer_index;i++)
-    {
-        buffer[i]=0;
-    }
-
-    buffer_index=0;
-}
 }
 
 /*
  * Clear the entire local buffer used to store received UART data.
  */
-void clear_buffer_full(){
+void clear_buffer(){
     for (i=0;i<BUFFER_SIZE;i++)
     {
         buffer[i]=0;
     }
 
     buffer_index=0;
+}
+
+/*
+ * Transmit baud rate string over UART
+ */
+void tx_baud_rate(){
+
+    char tx_buffer[10] = {0};
+    int tx_index = 0;
+
+    // Put blink rate into transmit buffer array
+    sprintf(tx_buffer, "%i%c", blink_rate, end_char);
+
+    while(tx_index <= strlen(tx_buffer)){
+
+        // Wait for TX buffer to be ready for new data
+        while(!(UCA0IFG & UCTXIFG));
+
+        // Push data to TX buffer
+        UCA0TXBUF = tx_buffer[tx_index];
+
+        // Increment index
+        tx_index++;
+    }
+
+    // Wait until the last byte is completely sent
+    while(UCA0STATW & UCBUSY);
+
 }

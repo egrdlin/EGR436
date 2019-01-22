@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1548125050 source:c:\users\ariel\onedrive\documents\gvsu\egr 436\lab1_usb\main.c
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+	<stdbool.h>
+	<windows.h>
+	<conio.h>
+

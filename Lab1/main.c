@@ -16,12 +16,7 @@ int main(void) {
     P1->DIR |= BIT0;
     P1->OUT |= BIT0;
 
-    //SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Enable sleep on exit from ISR
-
-
     while(1);
-    //__sleep();
-    //__no_operation();
 }
 
 
