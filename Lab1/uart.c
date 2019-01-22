@@ -117,6 +117,7 @@ void update_blink_rate(){
  * Clear the entire local buffer used to store received UART data.
  */
 void clear_buffer(){
+
     for (i=0;i<BUFFER_SIZE;i++)
     {
         buffer[i]=0;
