@@ -5,7 +5,7 @@
 // Keeps track of how many times the Timer A0 ISR is hit. Resets when it reaches the desired
 // maximum value determined by blink rate.
 extern volatile int count = 0;
-
+extern volatile int LED_flag = 0;
 /*
  * This function initializes Timer A0 in Up mode and ties it to ACLK (32768Hz).
  */
@@ -33,16 +33,27 @@ void Init_TA0(){
  */
 void TA0_0_IRQHandler() {
     // Clear the compare interrupt flag
-    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-    count++;
+//    TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+//    count++;
+//    int blink_rate = get_blink_rate();
+//    if(count == blink_rate - 5 || blink_rate <= 5){
+//        P1->OUT |= BIT0;    // Turn on P1.0 LED
+//    }else if (count == blink_rate){
+//        P1->OUT &= ~BIT0;    // Turn off P1.0 LED
+//        count = 0;          // Reset count
+//    }
     int blink_rate = get_blink_rate();
-    if(count == blink_rate - 5 || blink_rate <= 5){
-        P1->OUT |= BIT0;    // Turn on P1.0 LED
-    }else if (count == blink_rate){
-        P1->OUT &= ~BIT0;    // Turn off P1.0 LED
-        count = 0;          // Reset count
+    if(LED_flag)
+    {
+    P1->OUT &= ~BIT0;
+    TIMER_A0->CCR[0] = 32768*60/(blink_rate) - 1000;
+    LED_flag = 0;
     }
-
+    else{
+    P1->OUT |= BIT0;
+    TIMER_A0->CCR[0] = 1000;
+    LED_flag = 1;
+    }
 }
 
 /*
