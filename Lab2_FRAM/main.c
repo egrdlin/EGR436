@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 uint8_t RXData = 0;
 uint8_t TXData;
@@ -29,7 +30,7 @@ void SPI_tx(uint8_t value) // Using EUSCIxBO, P2.3 as Slave Select
 {
 
     /* assert slave select */
-     P2->OUT &= ~8; //p2.3 as slave select
+//     P2->OUT &= ~8; //p2.3 as slave select active low
 
     /* Wait for transmit buffer empty*/
     while (!(EUSCI_B0->IFG & 2 ));
@@ -42,9 +43,30 @@ void SPI_tx(uint8_t value) // Using EUSCIxBO, P2.3 as Slave Select
     while(EUSCI_B0->STATW & 1);
 
     /* de-assert slave select */
-     P2->OUT |= 8; //p2.3 as slave select
+//     P2->OUT |= 8; //p2.3 as slave select
 }
 
+
+
+void SPI_A1_pin_init(void)
+{
+    PMAP->KEYID = 0x2D52; /* Unlock PMAP*/
+    P2MAP->PMAP_REGISTER[1] = 0x0800; /* Map P2.3 to PM_UCA1CLK*/
+    P2MAP->PMAP_REGISTER[2] = 0x070A; /* Map P2.4 to PM_UCA1_SIMO, Map P2.5 to PM_UCA1STE */
+    P2MAP->PMAP_REGISTER[3] = PMAP_UCA1SOMI; /* Map P2.6 to PM_UCA1SOMI*/
+
+    P2->SEL0 |= 0x78;               /* set alternate function to pin map */
+    P2->SEL1 &= ~0x78;              /* for P2.3, P2.4, P2.5, P2.6 */
+    PMAP->CTL = 0;                  /* lock PMAP */
+    PMAP->KEYID = 0;
+
+    /*
+     *  P2.5 = UCA1STE - slave transmit enable
+     *  P2.3 = UCA1CLK - clock
+     *  P2.6 = UCA1SOMI - slave out master in
+     *  P2.4 = UCA1SIMO - slave in master out
+     * */
+}
 void SPI_FRAM_init(void)
 {
     EUSCI_A1->CTLW0 = 0x0001; /* Disable UCA1 during configuration*/
@@ -58,23 +80,6 @@ void SPI_FRAM_init(void)
     EUSCI_A1->CTLW0 &= ~0x0001; /* Enable UCA1 after configuration*/
     SPI_A1_pin_init();
 }
-
-void SPI_A1_pin_init(void)
-{
-
-    P2->SEL0 |=  0x000F;     // set 4-SPI pin as second function for
-    P2->SEL0 &=  ~(0x000F);
-    /*
-     *  P2.0 = UCA1STE - slave transmit enable
-     *  P2.1 = UCA1CLK - clock
-     *  P2.2 = UCA1SOMI - slave out master in
-     *  P2.3 = UCA1SIMO - slave in master out
-     * */
-
-
-
-}
-
 
 
 int FRAM_init(void)
@@ -201,7 +206,7 @@ int FRAM_erase_all(void)
     err = FRAM_ready();
     if (err)
     {
-//        printf("SPI/FRAM is not initialized\n");
+//        printfff("SPI/FRAM is not initialized\n");
         return -1;
     }
 
@@ -230,14 +235,33 @@ int FRAM_erase_all(void)
 void main(void)
 {
         char data;
+        int i;
         uint16_t addr;
 
         SPI_FRAM_init();
-        FRAM_init(); // Initialize FRAM device
-        FRAM_read_byte(addr);   // Read a byte from the address
-        FRAM_write_byte(addr, data); // write data to the given address
-        FRAM_erase_all(); // erase
+        SPI_A1_pin_init();
 
+//        FRAM_init(); // Initialize FRAM device
+//        FRAM_read_byte(addr);   // Read a byte from the address
+//        FRAM_write_byte(addr, data); // write data to the given address
+//        FRAM_erase_all(); // erase
 
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
+
+	while(1)
+	{
+        for (i = 'A'; i <= 'Z'; i++) {
+            while(!(EUSCI_A1->IFG & 2)) ; /* wait for transmit buffer empty */
+            EUSCI_A1->TXBUF = i;          /* write the character */
+            delayMs(10);
+
+	}
 }
+}
+	/* system clock at 3 MHz */
+	void delayMs(int n) {
+	    int i, j;
+
+	    for (j = 0; j < n; j++)
+	        for (i = 250; i > 0; i--);      /* delay */
+	}
