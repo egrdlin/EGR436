@@ -18,7 +18,7 @@ uint8_t TXData;
 #define OPCODE_WRSR    (uint16_t)(0x01)     /* Write Status Register */
 #define OPCODE_READ    (uint16_t)(0x03)     /* Read Memory */
 #define OPCODE_WRITE   (uint16_t)(0x02)     /* Write Memory */
-#define OPCODE_RDID    (uint16_t)(0x9F)  /* Read Device ID */
+#define OPCODE_RDID    (uint16_t)(0x9F)     /* Read Device ID */
 
 #define FRAM_MAX_TRANSACTION 20 //mem size
 #define FRAM_MEM_SIZE   0x8000  //Memory size
@@ -26,27 +26,24 @@ uint8_t TXData;
 
 static int spi_init = 0;
 
-void SPI_tx(uint8_t value) // Using EUSCIxBO, P2.3 as Slave Select
+void SPI_tx(uint8_t value) // Using EUSCIA1
 {
 
-    /* assert slave select */
-//     P2->OUT &= ~8; //p2.3 as slave select active low
+    EUSCI_A1->IFG |= EUSCI_A_IFG_TXIFG; // Clear TXIFG flag
+    EUSCI_A1->IE |= EUSCI_A__TXIE;      // Enable TX interrupt
 
     /* Wait for transmit buffer empty*/
-    while (!(EUSCI_B0->IFG & 2 ));
+    while (!(EUSCI_A1->IFG & 2 ));
 
 
     /* write to SPI transmit buffer */
-    EUSCI_B0->TXBUF = value;
+    EUSCI_A1->TXBUF = value;
 
     /* Wait for transmit done */
-    while(EUSCI_B0->STATW & 1);
+    while(EUSCI_A1->STATW & 1);
 
-    /* de-assert slave select */
-//     P2->OUT |= 8; //p2.3 as slave select
+
 }
-
-
 
 void SPI_A1_pin_init(void)
 {
@@ -69,6 +66,9 @@ void SPI_A1_pin_init(void)
 }
 void SPI_FRAM_init(void)
 {
+    SPI_A1_pin_init();
+
+
     EUSCI_A1->CTLW0 = 0x0001; /* Disable UCA1 during configuration*/
     /* SPI through EUSCI_A1:
      * clock phase/polarity: 11,    MSB first,  8-bit,  master mode,
@@ -78,7 +78,9 @@ void SPI_FRAM_init(void)
 
     EUSCI_A1->BRW = 1; /* 3MHz / 1 = 3MHz*/
     EUSCI_A1->CTLW0 &= ~0x0001; /* Enable UCA1 after configuration*/
-    SPI_A1_pin_init();
+
+    EUSCI_B0->IFG |= EUSCI_B_IFG_TXIFG; // Clear TXIFG flag
+    EUSCI_B0->IE |= EUSCI_B__TXIE;      // Enable TX interrupt
 }
 
 
@@ -87,13 +89,11 @@ int FRAM_init(void)
     char buf[5] = {0};
     char ID;// id of the slave device
     uint16_t add_id;
-// make sure Configure the SPI interfaces on MSP432, Pins
-
 
     printf("\nDetecting chip...\n");
     buf[0] = OPCODE_RDID; // RDID command reads fixed slave device ID
-    SPI_tx(buf); // send buf with RDID command
-    ID = FRAM_read_byte(add_id);
+    SPI_tx(buf[0]); // send buf with RDID command
+//    ID = FRAM_read_byte(add_id);
     printf("\n-------------------------------------------\n");
 //    printf("[*] Manufacturer ID: %02x%02x Product ID: %02x%02x\n", ID[1], ID[2], ID[3], ID[4]);
     printf("-------------------------------------------\n\n");
@@ -239,9 +239,15 @@ void main(void)
         uint16_t addr;
 
         SPI_FRAM_init();
+        // Enable global interrupt
+        __enable_irq();
+
+        // Enable eUSCIA3 interrupt in NVIC module
+        NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 31);
+
         SPI_A1_pin_init();
 
-//        FRAM_init(); // Initialize FRAM device
+        FRAM_init(); // Initialize FRAM device
 //        FRAM_read_byte(addr);   // Read a byte from the address
 //        FRAM_write_byte(addr, data); // write data to the given address
 //        FRAM_erase_all(); // erase
@@ -250,18 +256,38 @@ void main(void)
 
 	while(1)
 	{
-        for (i = 'A'; i <= 'Z'; i++) {
-            while(!(EUSCI_A1->IFG & 2)) ; /* wait for transmit buffer empty */
-            EUSCI_A1->TXBUF = i;          /* write the character */
-            delayMs(10);
 
-	}
 }
 }
 	/* system clock at 3 MHz */
-	void delayMs(int n) {
+
+
+void delayMs(int n) {
 	    int i, j;
 
 	    for (j = 0; j < n; j++)
 	        for (i = 250; i > 0; i--);      /* delay */
 	}
+
+void EUSCIA1_IRQHandler(void)
+{
+    if (EUSCI_A1->IFG & EUSCI_A_IFG_TXIFG)
+    {
+        // Transmit characters
+        EUSCI_A1->TXBUF = TXData;
+
+        // Disable tx interrupt
+        EUSCI_A1->IE &= ~EUSCI_A__TXIE;
+
+
+        // Wait till a character is received
+        while (!(EUSCI_A1->IFG & EUSCI_A_IFG_RXIFG));
+
+        // Move data to a temporary buffer
+        RXData = EUSCI_A1->RXBUF;
+
+        // Clear the receive interrupt flag
+        EUSCI_A1->IFG &= ~EUSCI_A_IFG_RXIFG;
+    }
+}
+
