@@ -5,6 +5,8 @@
 #include <stdio.h>
 
 uint8_t RXData = 0;
+uint16_t Buffer [100]={0};
+uint8_t RX_ind =0;
 uint8_t TXData;
 // Status register
 #define FRAM_WPEN       0x80
@@ -28,19 +30,21 @@ static int spi_init = 0;
 
 void SPI_tx(uint8_t value) // Using EUSCIA1
 {
-
-    EUSCI_A1->IFG |= EUSCI_A_IFG_TXIFG; // Clear TXIFG flag
-    EUSCI_A1->IE |= EUSCI_A__TXIE;      // Enable TX interrupt
-
-    /* Wait for transmit buffer empty*/
-    while (!(EUSCI_A1->IFG & 2 ));
+//
+    TXData = value;
+    EUSCI_A1->IFG |= EUSCI_A_IFG_TXIFG; // Clear TXIFG flag, TX BUF is empty
+    EUSCI_A1->IE |= EUSCI_A__TXIE;      // Enable TX interrupt to request interrupt
 
 
-    /* write to SPI transmit buffer */
-    EUSCI_A1->TXBUF = value;
-
-    /* Wait for transmit done */
-    while(EUSCI_A1->STATW & 1);
+//    /* Wait for TX buffer empty*/
+//    while (!(EUSCI_A1->IFG & EUSCI_A_IFG_TXIFG ));
+//
+//
+//    /* write to SPI transmit buffer */
+//    EUSCI_A1->TXBUF = value;
+//
+//    /* Wait for transmit done */
+//    while(EUSCI_A1->STATW & 1);
 
 
 }
@@ -49,13 +53,16 @@ void SPI_A1_pin_init(void)
 {
     PMAP->KEYID = 0x2D52; /* Unlock PMAP*/
     P2MAP->PMAP_REGISTER[1] = 0x0800; /* Map P2.3 to PM_UCA1CLK*/
-    P2MAP->PMAP_REGISTER[2] = 0x070A; /* Map P2.4 to PM_UCA1_SIMO, Map P2.5 to PM_UCA1STE */
+    P2MAP->PMAP_REGISTER[2] = 0x000A; /* Map P2.4 to PM_UCA1_SIMO */
     P2MAP->PMAP_REGISTER[3] = PMAP_UCA1SOMI; /* Map P2.6 to PM_UCA1SOMI*/
 
-    P2->SEL0 |= 0x78;               /* set alternate function to pin map */
-    P2->SEL1 &= ~0x78;              /* for P2.3, P2.4, P2.5, P2.6 */
+    P2->SEL0 |= 0x58;               /* set alternate function to pin map */
+    P2->SEL1 &= ~0x58;              /* for P2.3, P2.4, P2.6 */
     PMAP->CTL = 0;                  /* lock PMAP */
     PMAP->KEYID = 0;
+
+    P1->DIR |= BIT6; /* use P1.6 to manually select chip*/
+    P1->OUT |= BIT6; /* pull low to start, pull high to end*/
 
     /*
      *  P2.5 = UCA1STE - slave transmit enable
@@ -68,40 +75,35 @@ void SPI_FRAM_init(void)
 {
     SPI_A1_pin_init();
 
-
-    EUSCI_A1->CTLW0 = 0x0001; /* Disable UCA1 during configuration*/
+    EUSCI_A1->CTLW0 = EUSCI_A_CTLW0_SWRST; /* Disable UCA1 during configuration*/
     /* SPI through EUSCI_A1:
-     * clock phase/polarity: 11,    MSB first,  8-bit,  master mode,
-     * 4-pin SPI,   STE Low active,     sychronous mode,    use SMCLK
-     * as clock source, STE for slave enable*/
-    EUSCI_A1->CTLW0 = 0xEDC3;
+     * SPI mode 0, MSB first,  8-bit,  master mode,
+     * 3-pin SPI, sychronous mode, SMCLK */
+    EUSCI_A1->CTLW0 = 0x29C1;
 
-    EUSCI_A1->BRW = 1; /* 3MHz / 1 = 3MHz*/
-    EUSCI_A1->CTLW0 &= ~0x0001; /* Enable UCA1 after configuration*/
+    EUSCI_A1->BRW = 10; /* 3MHz / 1 = 3MHz*/
+    EUSCI_A1->CTLW0 &= ~ EUSCI_A_CTLW0_SWRST; /* Enable UCA1 after configuration*/
 
-    EUSCI_B0->IFG |= EUSCI_B_IFG_TXIFG; // Clear TXIFG flag
-    EUSCI_B0->IE |= EUSCI_B__TXIE;      // Enable TX interrupt
+    TXData = 0x01; // Initialize TX data to 0x01
+
+    // Enable eUSCIA1 interrupt in NVIC module
+    NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 31); /* enable IRQ 17 => EUSCIA1*/
+
 }
 
 
-int FRAM_init(void)
+int Read_ID(void)
 {
     char buf[5] = {0};
-    char ID;// id of the slave device
-    uint16_t add_id;
+    buf[0] = OPCODE_RDID; // RDID command reads fixed slave device ID OPCODE_RDSR
 
-    printf("\nDetecting chip...\n");
-    buf[0] = OPCODE_RDID; // RDID command reads fixed slave device ID
-    SPI_tx(buf[0]); // send buf with RDID command
-//    ID = FRAM_read_byte(add_id);
-    printf("\n-------------------------------------------\n");
-//    printf("[*] Manufacturer ID: %02x%02x Product ID: %02x%02x\n", ID[1], ID[2], ID[3], ID[4]);
-    printf("-------------------------------------------\n\n");
-
-    if (buf[1] == 0x04) // if the first byte reads: 0000 0010
+    P1->OUT &= ~BIT6; /* Pull low to select the chip*/
+    int i;
+    for (i=0;i<5;i++)
     {
-        spi_init = 1; //initialized
+        SPI_tx(buf[i]); // send buf with RDID command
     }
+    P1->OUT |= BIT6;
 
     return 0;
 }
@@ -234,30 +236,28 @@ int FRAM_erase_all(void)
  */
 void main(void)
 {
-        char data;
-        int i;
-        uint16_t addr;
 
         SPI_FRAM_init();
+
         // Enable global interrupt
         __enable_irq();
 
-        // Enable eUSCIA3 interrupt in NVIC module
-        NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 31);
 
-        SPI_A1_pin_init();
-
-        FRAM_init(); // Initialize FRAM device
+        Read_ID();
+        //FRAM_init(); // Initialize FRAM device
 //        FRAM_read_byte(addr);   // Read a byte from the address
 //        FRAM_write_byte(addr, data); // write data to the given address
 //        FRAM_erase_all(); // erase
+
+
 
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;		// stop watchdog timer
 
 	while(1)
 	{
-
-}
+//	    __delay_cycles(3000000);
+//	    FRAM_init();
+	}
 }
 	/* system clock at 3 MHz */
 
@@ -271,23 +271,26 @@ void delayMs(int n) {
 
 void EUSCIA1_IRQHandler(void)
 {
-    if (EUSCI_A1->IFG & EUSCI_A_IFG_TXIFG)
+    if (EUSCI_A1->IFG & EUSCI_A_IFG_TXIFG) // if TXIFG = 1, TXBUF is empty
     {
-        // Transmit characters
-        EUSCI_A1->TXBUF = TXData;
-
-        // Disable tx interrupt
-        EUSCI_A1->IE &= ~EUSCI_A__TXIE;
-
+        EUSCI_A1->TXBUF = TXData;           // Transmit characters TXData
+            /* Wait for transmit done */
+            while(EUSCI_A1->STATW & 1);
+        EUSCI_A1->IE &= ~EUSCI_A__TXIE;     // Disable Transmit interrupt
 
         // Wait till a character is received
         while (!(EUSCI_A1->IFG & EUSCI_A_IFG_RXIFG));
-
-        // Move data to a temporary buffer
         RXData = EUSCI_A1->RXBUF;
 
+        // Move data to a temporary buffer
+        Buffer[RX_ind] = RXData;
         // Clear the receive interrupt flag
-        EUSCI_A1->IFG &= ~EUSCI_A_IFG_RXIFG;
+        //EUSCI_A1->IFG &= ~EUSCI_A_IFG_RXIFG;
+        RX_ind++;
+
+        // Clear the receive interrupt flag
+        EUSCI_B0->IFG &= ~EUSCI_B_IFG_RXIFG;
+
     }
 }
 
