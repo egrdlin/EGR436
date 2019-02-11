@@ -46,5 +46,7 @@ void Get_Address_Size();
 //Poem Functions
 void Store_Poem(const uint8_t *buffer, int length);
 void Get_Poem(uint8_t index);
+void Delete_Poem(uint8_t index);
+void Clear_FRAM();
 
 #endif /* SPI_H_ */

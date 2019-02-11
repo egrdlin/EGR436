@@ -430,3 +430,26 @@ void Get_Poem(uint8_t index){
     }
 
 }
+
+/*
+ * Delete a poem from FRAM memory
+ * @param index Index of poem to delete
+ */
+void Delete_Poem(uint8_t index){
+
+    // Decrement index (poem #1 is at index 0, etc.)
+    index--;
+    uint8_t start = poem_array[index].start_index;
+    uint8_t end = poem_array[index].end_index;
+
+    // TODO: Delete poem from FRAM memory (Shift poems behind it up, fill in not used spaces with 0s, adjust index)
+    // TODO: Delete poem from struct array (Shift poems behind it up, adjust index)
+}
+
+/*
+ * Clears all FRAM memory spaces to 0s
+ */
+void Clear_FRAM(){
+
+    // TODO: Clear all FRAM memory spaces to 0s
+}

@@ -13,6 +13,12 @@ void main(void)
 
     SPI_FRAM_init();
 
+    /*********** FRAM Read IDs Test **********/
+    uint16_t manufacturerID, productID;
+
+    Read_ID(&manufacturerID, &productID);
+    fprintf(stderr, "Manufacturer ID: 0x%04x\n", manufacturerID);
+    fprintf(stderr, "Product ID: 0x%04x\n", productID);
 
     /*********** FRAM Read & Write Test **********/
 //    uint8_t test_doc1[] = {'p','o','e','m','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
@@ -36,7 +42,7 @@ void main(void)
 //        read_data[i] = Read8(i);
 //    }
 
-    /*********** Poem Test ***************/
+    /*********** Poem Functions Test ***************/
     uint8_t test_doc1[] = {'p','o','e','m','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
 
     Store_Poem(test_doc1, 24);
@@ -46,17 +52,6 @@ void main(void)
 
     }
 }
-
-
-//        uint16_t manufacturerID, productID;
-//
-//        Read_ID(&manufacturerID, &productID);
-//        fprintf(stderr, "Manufacturer ID: 0x%02x\n", manufacturerID);
-//        fprintf(stderr, "Product ID: 0x%02x\n", productID);
-
-//        Write_Enable(true);
-//        Write8(0, test + 1);
-//        Write_Enable(false);
 
 //        // dump the entire 8K of memory!
 //        uint8_t value;
