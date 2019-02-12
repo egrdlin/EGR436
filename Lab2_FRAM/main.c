@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-
 void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
@@ -17,8 +16,8 @@ void main(void)
     uint16_t manufacturerID, productID;
 
     Read_ID(&manufacturerID, &productID);
-    fprintf(stderr, "Manufacturer ID: 0x%04x\n", manufacturerID);
-    fprintf(stderr, "Product ID: 0x%04x\n", productID);
+//    fprintf(stderr, "Manufacturer ID: 0x%04x\n", manufacturerID);
+//    fprintf(stderr, "Product ID: 0x%04x\n", productID);
 
     /*********** FRAM Read & Write Test **********/
 //    uint8_t test_doc1[] = {'p','o','e','m','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
@@ -43,26 +42,27 @@ void main(void)
 //    }
 
     /*********** Poem Functions Test ***************/
-    uint8_t test_doc1[] = {'p','o','e','m','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
-
+    uint8_t test_doc1[] = {'1','o','e','m','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
+    uint8_t test_doc2[] = {'2','b','c','d','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
+    uint8_t test_doc3[] = {'3','f','g','h','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
+    uint8_t test_doc4[] = {'4','b','c','d','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
+    uint8_t test_doc5[] = {'5','f','g','h','.','t','x','t','\n','T','h','i','s',' ','i','s',' ','a',' ','p','o','e','m','.'};
+//    char *str1 = "I love EGR 436 ^J ";
+//    char str[80];
+//    strcpy(str, "The truth is ");
+//    strcat(str, str1);
     Store_Poem(test_doc1, 24);
-    Get_Poem(1);
+    Store_Poem(test_doc2, 24);
+    Store_Poem(test_doc3, 24);
+    Store_Poem(test_doc4, 24);
+    Store_Poem(test_doc5, 24);
+   // Clear_FRAM();
+    uint8_t str_poem [100] = {0};
+    //Get_Poem(str_poem, 3); // str_poem reads the poem from the index 3
+    Delete_Poem(2);
 
+    Get_Poem(str_poem, 3);
     while (1){
 
     }
 }
-
-//        // dump the entire 8K of memory!
-//        uint8_t value;
-//        uint16_t a;
-//        for (a = 0; a < 8192; a++) {
-//          value = Read8(a);
-//          if ((a % 32) == 0) {
-//            fprintf(stderr, "\n 0x%x: ", a);
-//          }
-//          fprintf(stderr, "0x");
-//          if (value < 0x1)
-//            fprintf(stderr, "0");
-//          fprintf(stderr, "%x ", value);
-//        }

@@ -36,7 +36,7 @@ void SPI_FRAM_init(void)
 }
 
 /*
- *  P2.5 = UCA1STE - slave transmit enable
+ *  P1.6 = UCA1STE - slave transmit enable
  *  P2.3 = UCA1CLK - clock
  *  P2.6 = UCA1SOMI - slave out master in
  *  P2.4 = UCA1SIMO - slave in master out
@@ -91,7 +91,7 @@ void Read_ID(uint16_t *manufacturerID, uint16_t *productID)
     SPI_tx(0);
     RX_Buf[3] = SPI_rx();
 
-    P1->OUT |= BIT6;
+    P1->OUT |= BIT6; // pull high to deselect the chip
 
     *manufacturerID = (RX_Buf[0] << 8 ) | (RX_Buf[1]);
     *productID = (RX_Buf[2] << 8 ) | (RX_Buf[3]);
@@ -104,6 +104,7 @@ void Read_ID(uint16_t *manufacturerID, uint16_t *productID)
  */
 uint8_t SPI_rx(){
     uint8_t data;
+    /* waiting till done receiving */
     while (EUSCI_A1->STATW & EUSCI_A_STATW_BUSY && !(EUSCI_A1->IFG & EUSCI_A_IFG_RXIFG));
     data = EUSCI_A1->RXBUF;
     EUSCI_A1->IFG &= ~EUSCI_A_IFG_RXIFG;
@@ -223,7 +224,7 @@ uint8_t Read8(uint32_t addr)
     SPI_tx((uint8_t)(addr >> 8));
     SPI_tx((uint8_t)(addr & 0xFF));
 
-    SPI_tx(0);
+    SPI_tx(0); // keep sending a byte of data (will be viewed as invalid) to receive
 
     RX_Data = SPI_rx();
 
@@ -406,26 +407,27 @@ void Store_Poem(const uint8_t *buffer, int length){
         Write8(fram_index++, buffer[i]);
         Write_Enable(false);
     }
+    poem_index++;
 }
 
 /*
  * Retrieve a poem from FRAM memory
  * @param index Index of poem to get
  */
-void Get_Poem(uint8_t index){
+void Get_Poem(uint8_t *str_poem, uint8_t index){
 
     // Decrement index (poem #1 is at index 0, etc.)
     index--;
     uint8_t start = poem_array[index].start_index;
     uint8_t end = poem_array[index].end_index;
-
-    uint8_t test[100] = {0}; // Test variable to see if data read correctly
+    uint8_t test[100] = {0}; // Test variable to see if data read correctly;
 
     uint8_t i, temp;
+    // for(i=start; i<end; i++)
     for(i=start; i<end; i++){
         temp = Read8(i);
-
-        test[i] = temp; // Test
+//        test[i] = temp; // Test
+        str_poem[i-start] = temp; // return the string
         // transmit over uart
     }
 
@@ -438,10 +440,18 @@ void Get_Poem(uint8_t index){
 void Delete_Poem(uint8_t index){
 
     // Decrement index (poem #1 is at index 0, etc.)
-    index--;
-    uint8_t start = poem_array[index].start_index;
-    uint8_t end = poem_array[index].end_index;
 
+    uint8_t del_cell_start = poem_array[index].start_index;
+    uint8_t del_cell_end = poem_array[index].end_index;
+    uint8_t end_index = poem_index;
+    uint8_t i;
+    for (i = 1; i<end_index-index-1 ; i++)
+    {
+        uint8_t next_poem [100];
+    Get_Poem(next_poem, index+i); // str_poem reads the poem from the index 3
+    poem_index = poem_index-index-2;
+    Store_Poem(next_poem, 24);
+    }
     // TODO: Delete poem from FRAM memory (Shift poems behind it up, fill in not used spaces with 0s, adjust index)
     // TODO: Delete poem from struct array (Shift poems behind it up, adjust index)
 }
@@ -451,5 +461,16 @@ void Delete_Poem(uint8_t index){
  */
 void Clear_FRAM(){
 
-    // TODO: Clear all FRAM memory spaces to 0s
+    // Clear all FRAM memory spaces to 0s
+    uint8_t rewrite_index = 0;
+    uint8_t rewrite_value = 0;
+    while (rewrite_index != fram_index)
+    {
+    Write_Enable(true); // enable write
+    Write8(rewrite_index, rewrite_value );// writes 0s to the address starting from 0 to fram_index
+    Write_Enable(false); // disable write after finishes
+//    Read8(rewrite_index );// writes 0s to the address starting from 0 to fram_index
+    rewrite_index++;
+    }
+
 }
