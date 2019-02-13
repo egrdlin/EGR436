@@ -44,11 +44,13 @@ void Write_Address(uint32_t addr);
 void Get_Address_Size();
 
 //Poem Functions
-void Store_Poem(const uint8_t *buffer, int length);
-//void Get_Poem(uint8_t index);
-void Get_Poem(uint8_t *str_poem, uint8_t index);
+void Store_Poem(const char *buffer);
+void Get_Poem(uint8_t index, char *poem);
 void Delete_Poem(uint8_t index);
 void Clear_FRAM();
-
+void Directory_TX(char *buffer);
+void Test_Fill_Poem_Array();
+void Get_Size(char *data);
+void Delete_Poem(uint8_t index);
 
 #endif /* SPI_H_ */

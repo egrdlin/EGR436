@@ -1,3 +1,6 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "spi.h"
 #include "msp.h"
 
@@ -36,7 +39,7 @@ void SPI_FRAM_init(void)
 }
 
 /*
- *  P1.6 = UCA1STE - slave transmit enable
+ *  P2.5 = UCA1STE - slave transmit enable
  *  P2.3 = UCA1CLK - clock
  *  P2.6 = UCA1SOMI - slave out master in
  *  P2.4 = UCA1SIMO - slave in master out
@@ -91,7 +94,7 @@ void Read_ID(uint16_t *manufacturerID, uint16_t *productID)
     SPI_tx(0);
     RX_Buf[3] = SPI_rx();
 
-    P1->OUT |= BIT6; // pull high to deselect the chip
+    P1->OUT |= BIT6;
 
     *manufacturerID = (RX_Buf[0] << 8 ) | (RX_Buf[1]);
     *productID = (RX_Buf[2] << 8 ) | (RX_Buf[3]);
@@ -104,7 +107,6 @@ void Read_ID(uint16_t *manufacturerID, uint16_t *productID)
  */
 uint8_t SPI_rx(){
     uint8_t data;
-    /* waiting till done receiving */
     while (EUSCI_A1->STATW & EUSCI_A_STATW_BUSY && !(EUSCI_A1->IFG & EUSCI_A_IFG_RXIFG));
     data = EUSCI_A1->RXBUF;
     EUSCI_A1->IFG &= ~EUSCI_A_IFG_RXIFG;
@@ -224,7 +226,7 @@ uint8_t Read8(uint32_t addr)
     SPI_tx((uint8_t)(addr >> 8));
     SPI_tx((uint8_t)(addr & 0xFF));
 
-    SPI_tx(0); // keep sending a byte of data (will be viewed as invalid) to receive
+    SPI_tx(0);
 
     RX_Data = SPI_rx();
 
@@ -377,7 +379,9 @@ uint8_t poem_index = 0; // Index to keep track of how many poems saved
  * @param buffer The pointer to the RX buffer containing the poem title, \n, then the rest of the poem
  *        length The number of elements in the RX buffer
  */
-void Store_Poem(const uint8_t *buffer, int length){
+void Store_Poem(const char *buffer){
+
+    int length = strlen(buffer);
 
     // Set start index
     poem_array[poem_index].start_index = fram_index;
@@ -401,6 +405,8 @@ void Store_Poem(const uint8_t *buffer, int length){
         i++;
     }
 
+    poem_array[poem_index].name[read_index] = '\0';
+
     // Get and store rest of poem
     for( ; i<length; i++){
         Write_Enable(true);
@@ -414,23 +420,29 @@ void Store_Poem(const uint8_t *buffer, int length){
  * Retrieve a poem from FRAM memory
  * @param index Index of poem to get
  */
-void Get_Poem(uint8_t *str_poem, uint8_t index){
+void Get_Poem(uint8_t index, char *poem){
 
     // Decrement index (poem #1 is at index 0, etc.)
     index--;
+
+    if(index < poem_index){
     uint8_t start = poem_array[index].start_index;
     uint8_t end = poem_array[index].end_index;
-    uint8_t test[100] = {0}; // Test variable to see if data read correctly;
 
-    uint8_t i, temp;
-    // for(i=start; i<end; i++)
+    //uint8_t test[100] = {0}; // Test variable to see if data read correctly
+
+    uint8_t i, temp, index_2=0;
     for(i=start; i<end; i++){
         temp = Read8(i);
-//        test[i] = temp; // Test
-        str_poem[i-start] = temp; // return the string
+
+        poem[index_2++] = temp; // Test
         // transmit over uart
     }
+    poem[index_2] = '\0';
 
+    }else{
+        strcpy(poem, "Invalid poem index.");
+    }
 }
 
 /*
@@ -440,20 +452,52 @@ void Get_Poem(uint8_t *str_poem, uint8_t index){
 void Delete_Poem(uint8_t index){
 
     // Decrement index (poem #1 is at index 0, etc.)
+    index--;
 
-    uint8_t del_cell_start = poem_array[index].start_index;
-    uint8_t del_cell_end = poem_array[index].end_index;
-    uint8_t end_index = poem_index;
-    uint8_t i;
-    for (i = 1; i<end_index-index-1 ; i++)
-    {
-        uint8_t next_poem [100];
-    Get_Poem(next_poem, index+i); // str_poem reads the poem from the index 3
-    poem_index = poem_index-index-2;
-    Store_Poem(next_poem, 24);
+    if(index < poem_index){
+
+        uint8_t start = poem_array[index].start_index;
+        uint8_t end = poem_array[index].end_index;
+        uint8_t difference = (end - start);
+        int i;
+        uint8_t rewrite_value = 0;
+
+        if(index == poem_index-1){
+
+            for(i=start; i<end;i++){
+                Write8(i,rewrite_value);
+            }
+        }else{
+            for(i=index;i<poem_index;i++){
+                if(i<poem_index - 1){
+
+                    strcpy(poem_array[i].name,poem_array[i+1].name);
+                    poem_array[i].start_index = poem_array[i+1].start_index;
+                    poem_array[i].end_index = poem_array[i+1].end_index;
+                    poem_array[i].start_index -= difference;
+                    poem_array[i].end_index -= difference;
+                }
+            }
+
+            uint8_t test_end = poem_array[poem_index-1].end_index;
+            for(i=start;i<test_end;i++){
+                uint8_t temp;
+                temp = Read8(i+difference);
+                Write_Enable(true);
+                Write8(i,temp);
+                Write_Enable(false);
+            }
+
+            for(i=test_end; i<test_end+difference;i++){
+                Write_Enable(true);
+                Write8(i,rewrite_value);
+                Write_Enable(false);
+            }
+        }
+
+        fram_index -= difference;
+        poem_index--;
     }
-    // TODO: Delete poem from FRAM memory (Shift poems behind it up, fill in not used spaces with 0s, adjust index)
-    // TODO: Delete poem from struct array (Shift poems behind it up, adjust index)
 }
 
 /*
@@ -466,11 +510,52 @@ void Clear_FRAM(){
     uint8_t rewrite_value = 0;
     while (rewrite_index != fram_index)
     {
-    Write_Enable(true); // enable write
-    Write8(rewrite_index, rewrite_value );// writes 0s to the address starting from 0 to fram_index
-    Write_Enable(false); // disable write after finishes
-//    Read8(rewrite_index );// writes 0s to the address starting from 0 to fram_index
-    rewrite_index++;
+        Write_Enable(true); // enable write
+        Write8(rewrite_index, rewrite_value );// writes 0s to the address starting from 0 to fram_index
+        Write_Enable(false); // disable write after finishes
+        rewrite_index++;
+    }
+
+    poem_index = 0;
+    fram_index = 0;
+}
+
+/*
+ * Transmit items for directory. Format is in poem1_name.txt,poem1_length,poem2_name.txt,poem2_length etc..
+ */
+void Directory_TX(char *buffer){
+    int i;
+    buffer[0] = '\0';
+    for(i=0; i<poem_index; i++){
+        strcat(buffer, poem_array[i].name);
+        strcat(buffer, ",");
+        char int_string[10];
+        sprintf(int_string,"%i",poem_array[i].end_index - poem_array[i].start_index);
+        strcat(buffer, int_string);
+        if(i!= poem_index-1)
+            strcat(buffer, ",");
+    }
+
+}
+
+void Test_Fill_Poem_Array(){
+
+    sprintf(poem_array[0].name,"%s", "file1.txt");
+    poem_array[0].start_index = 0;
+    poem_array[0].end_index = 10;
+
+    sprintf(poem_array[1].name,"%s", "file2.txt");
+    poem_array[1].start_index = 11;
+    poem_array[1].end_index = 28;
+
+    poem_index = 2;
+}
+
+void Get_Size(char *data){
+    if(poem_index == 0){
+        sprintf(data,"%i%c",0,'\0');
+    }else{
+        sprintf(data,"%i%c",poem_array[poem_index-1].end_index,'\0');
     }
 
 }
