@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1549985692 source:c:\users\ariel\onedrive\documents\github\egr436\uart_test\main.c
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+	<stdbool.h>
+	<windows.h>
+	<conio.h>
+
