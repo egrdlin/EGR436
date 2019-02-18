@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1550451490 source:c:\users\ariel\onedrive\documents\github\egr436\lab3_ble_cb\main.c
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+	<stdbool.h>
+	<windows.h>
+	<conio.h>
+
