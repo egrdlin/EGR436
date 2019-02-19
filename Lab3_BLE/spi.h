@@ -52,5 +52,7 @@ void Directory_TX(char *buffer);
 void Test_Fill_Poem_Array();
 void Get_Size(char *data);
 void Delete_Poem(int index);
+void Save_Directory();
+void Get_Directory();
 
 #endif /* SPI_H_ */

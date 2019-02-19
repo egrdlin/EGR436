@@ -370,7 +370,7 @@ struct poem{
 
 struct poem poem_array[20]; // Array to store 20 poem structs
 
-int fram_index = 0; // Address of FRAM memory last wrote
+int fram_index = 300; // Address of FRAM memory last wrote
 
 int poem_index = 0; // Index to keep track of how many poems saved
 
@@ -520,7 +520,7 @@ void Clear_FRAM(){
     }
 
     poem_index = 0;
-    fram_index = 0;
+    fram_index = 300;
 }
 
 /*
@@ -539,6 +539,75 @@ void Directory_TX(char *buffer){
             strcat(buffer, ",");
     }
 
+}
+
+void Save_Directory(){
+    char dir_buffer[299];
+    int i;
+    dir_buffer [0] = '\0';
+    // Iterate through poem array structs
+    for(i=0; i<poem_index; i++){
+        strcat(dir_buffer, poem_array[i].name);
+        strcat(dir_buffer, ",");
+        char int_string[10];
+        sprintf(int_string,"%i",poem_array[i].start_index);
+        strcat(dir_buffer, int_string);
+        strcat(dir_buffer, ",");
+        sprintf(int_string,"%i",poem_array[i].length);
+        strcat(dir_buffer, int_string);
+        if(i!= poem_index-1)
+            strcat(dir_buffer, ",");
+    }
+
+    int length = strlen(dir_buffer);
+    // Iterate through buffer
+    for(i=0;i<length;i++){
+        Write_Enable(true);
+        Write8(i,dir_buffer[i]);
+        Write_Enable(false);
+    }
+}
+
+/*
+ * Get the directory from FRAM and fill poem array, set poem index, set FRAM index
+ */
+void Get_Directory(){
+    char dir_buffer[300];
+    dir_buffer [0] = '\0';
+
+    char temp;
+    int i = 0;
+    // Read directory elements stored in memory
+    do{
+        temp=Read8(i);
+        dir_buffer[i] = temp;
+        i++;
+    }while(temp != '\0');
+
+    // Get info and put in structs
+    char *token;
+    const char s[2] = ",";
+    poem_index=0;
+    if(strlen(dir_buffer) != 0){
+        token = strtok(dir_buffer, s);
+
+        while(token != NULL){
+            strcpy(poem_array[poem_index].name,token);
+            token = strtok(NULL, s);
+            poem_array[poem_index].start_index = atol(token);
+            token = strtok(NULL, s);
+            poem_array[poem_index].length = atol(token);
+            token = strtok(NULL, s);
+            poem_index++;
+        }
+
+        fram_index = 300 + poem_array[poem_index-1].start_index + poem_array[poem_index-1].length;
+    }else{
+        fram_index = 300;
+    }
+
+    char test[300];
+    strcpy(test, dir_buffer);
 }
 
 void Test_Fill_Poem_Array(){
