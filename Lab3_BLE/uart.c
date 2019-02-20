@@ -52,8 +52,6 @@ void UART_init(){
     P1->OUT |= BIT0; /* pull low to start, pull high to end*/
 }
 
-bool received_transmission = false;
-
 /*
  * EUSCI A0 UART interrupt service routine
  * Code used from Resource Explorer example: msp432p401x_euscia0_uart_01 - eUSCI_A0 UART echo at 9600 baud using BRCLK = 12MHz
@@ -109,7 +107,7 @@ void uart_check_command(){
         uart_reset_transmission();
 
     }else if(uart_comp_command(DIR_COMMAND)){
-        char directory[100];
+        char directory[1000];
         Directory_TX(directory);
         uart_data_TX(directory);
         uart_reset_transmission();
@@ -131,7 +129,7 @@ void uart_check_command(){
  * so a new transmission can be received.
  */
 void uart_reset_transmission(){
-    received_transmission = false;
+    //received_transmission = false;
     uart_buffer_index = 0;
 }
 
@@ -148,31 +146,6 @@ void uart_clear_buffer(){
 
     uart_buffer_index=0;
 }
-
-/*
- * Transmit string over UART
- */
-//void uart_String_TX(char *data){
-//
-//    char data_string[10];
-//    sprintf(data_string,"%04i", strlen(data)+1);
-//    reset_transmission();
-//
-//    // Transmit length of string
-//    data_TX(data_string);
-//
-//    // Wait for RX transmission
-//    while(!received_transmission);
-//
-//    // Verify transmission data
-//    while(strcmp(buffer,"START")){
-//        reset_transmission();
-//        while(!received_transmission);
-//    }
-//
-//    // Transmit string
-//    data_TX(data);
-//}
 
 /*
  * Transmit a string of data over UART (end character included)

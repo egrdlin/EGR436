@@ -36,6 +36,8 @@ void SPI_FRAM_init(void)
     // Enable eUSCIA1 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 17); /* enable IRQ 17 => EUSCIA1*/
 
+    Get_Directory();
+
 }
 
 /*
@@ -171,7 +173,7 @@ void Write_Enable(bool enable)
  * @param addr The 32-bit address to write to in FRAM memory
  *        value The 8-bit value to write to at addr
  */
-void Write8(uint32_t addr, uint8_t value)
+void Write8(uint32_t addr, char value)
 {
     P1->OUT &= ~BIT6; /* Pull low to select the chip*/
 
@@ -212,7 +214,7 @@ void Write(uint32_t addr, const uint8_t *values, size_t count)
  * @param addr The 32-bit address to read from in FRAM memory
  * @return The 8-bit value retrieved from addr
  */
-uint8_t Read8(uint32_t addr)
+char Read8(uint32_t addr)
 {
     uint8_t RX_Data;
 
@@ -414,6 +416,7 @@ void Store_Poem(const char *buffer){
         Write_Enable(false);
     }
     poem_index++;
+    Save_Directory();
 }
 
 /*
@@ -501,6 +504,7 @@ void Delete_Poem(int index){
         fram_index -= length;
         poem_index--;
     }
+    Save_Directory();
 }
 
 /*
@@ -566,6 +570,8 @@ void Save_Directory(){
         Write8(i,dir_buffer[i]);
         Write_Enable(false);
     }
+
+    Get_Directory();
 }
 
 /*
@@ -608,6 +614,7 @@ void Get_Directory(){
 
     char test[300];
     strcpy(test, dir_buffer);
+    int k;
 }
 
 void Test_Fill_Poem_Array(){
@@ -624,10 +631,14 @@ void Test_Fill_Poem_Array(){
 }
 
 void Get_Size(char *data){
+    int length=0, i;
+    for(i=0;i<poem_index;i++){
+        length += poem_array[i].length;
+    }
     if(poem_index == 0){
         sprintf(data,"%i%c",0,'\0');
     }else{
-        sprintf(data,"%i%c",poem_array[poem_index-1].length,'\0');
+        sprintf(data,"%i%c",length,'\0');
     }
 
 }

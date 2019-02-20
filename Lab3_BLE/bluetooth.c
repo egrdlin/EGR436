@@ -62,10 +62,10 @@ void ble_data_TX(char *data){
     int tx_index = 0;
 
     int length = (strlen(data));
-    while(tx_index <= (strlen(data))){
+    while(tx_index <= (strlen(data)+1)){
 
         // Wait for TX buffer to be ready for new data
-        while(!(UCA2IFG & UCTXIFG) && UCA2STATW & UCBUSY);
+        while(!(UCA2IFG & UCTXIFG));
 
         // Push data to TX buffer
         UCA2TXBUF = data[tx_index];
@@ -102,19 +102,6 @@ void EUSCIA2_IRQHandler(void)
     }
 }
 
-//void ble_Clear_RX_Buffer(){
-//
-//    int i;
-//    for(i=0;i<BUFFER_SIZE;i++){
-//        ble_buffer[i] = 0;
-//    }
-//    ble_buffer_index = 0;
-//}
-
-//void Get_RX_Buffer(char *data){
-//    memcpy(data,buffer,BUFFER_SIZE);
-//}
-
 /*
  * Check user input for known commands
  */
@@ -134,14 +121,14 @@ void ble_check_command(){
         ble_reset_transmission();
 
     }else if(ble_comp_command(READ_COMMAND)){
-        char poem[100] = {0};
+        char poem[1000] = {0};
         int ind = ble_buffer[strlen(READ_COMMAND)] - '0';
         Get_Poem(ind, poem);
         ble_data_TX(poem);
         ble_reset_transmission();
 
     }else if(ble_comp_command(DIR_COMMAND)){
-        char directory[100];
+        char directory[1000];
         Directory_TX(directory);
         ble_data_TX(directory);
         ble_reset_transmission();
@@ -163,7 +150,6 @@ void ble_check_command(){
  * so a new transmission can be received.
  */
 void ble_reset_transmission(){
-    //received_transmission = false;
     ble_buffer_index = 0;
 }
 
@@ -171,7 +157,7 @@ bool ble_comp_command(const char *checkCommand){
     bool compare = true;
 
     // Check command length
-    if(ble_buffer_index < strlen(checkCommand) + 1){
+    if(ble_buffer_index < strlen(checkCommand)){
         compare = false;
     }else{
         int i;

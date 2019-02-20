@@ -69,24 +69,8 @@ int main()
     SetCommState(hMasterCOM, &dcbMaster);
     Sleep(60);
 
-    /* Configure DCB Settings to Set 9600 Baud Rate */
-    /*
-    DCB dcbSerialParams = {0};
-
-    dcbSerialParams.DCBlength=sizeof(dcbSerialParams);
-
-
-    if (!GetCommState(hCom, &dcbSerialParams)){
-        printf("\tWarning: Unable to get DCB state of serial port\n");
-    }
-
-    if(!SetCommState(hCom, &dcbSerialParams)){
-        printf("\tWarning: Unable to set serial port DCB settings\n");
-    }*/
-
-
     /* Set COM Timeouts */
-    /*
+
     COMMTIMEOUTS timeouts={0};
 
     timeouts.ReadIntervalTimeout=500;
@@ -96,9 +80,9 @@ int main()
     timeouts.WriteTotalTimeoutMultiplier=10;
 
 
-    if(!SetCommTimeouts(hCom, &timeouts)){
+    if(!SetCommTimeouts(hMasterCOM, &timeouts)){
         printf("Warning: Unable to set serial port COM timeout settings\n");
-    }*/
+    }
 
     printf("COM%d Opened Successfully.\n\n",port);
 
@@ -150,10 +134,6 @@ int main()
 
         }else if(checkCommand(DELETE_COMMAND, entry)){
 
-            /*
-            char transmit[50];
-            sprintf(transmit, "DEL%i",entry[7]-'0');
-            transmit_string(transmit);*/
             transmit_string(entry);
             Sleep(1000);
             printf("\nEntry %i deleted.\n",entry[7]-'0');

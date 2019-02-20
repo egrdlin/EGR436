@@ -25,5 +25,6 @@ void main(void)
 
     while (1){
         uart_check_command();
+        ble_check_command();
     }
 }
