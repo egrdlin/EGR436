@@ -1,4 +1,5 @@
 #include "msp.h"
+#include "spi.h"
 
 void init_sensor(){
     // GPIO Setup
@@ -33,7 +34,7 @@ int is_covered = 0;
 void ADC14_IRQHandler(void) {
 
     // TODO: Create way of calibrating sensors
-    if (ADC14->MEM[0] >= 0xF64)             // Bee in between LED and sensor
+    if (ADC14->MEM[0] >= 0x500){             // Bee in between LED and sensor
       P1->OUT |= BIT0;                      // P1.0 = 1
 
         // Check if this is the first time the interrupt is triggered since being uncovered
@@ -42,10 +43,15 @@ void ADC14_IRQHandler(void) {
             //RTC_read(date); // Get time from RTC
             //date[7] = '\0'; // Convert time to string
             //write_date(date); // Write date to FRAM
+            Store_Time();
             is_covered = 1;
+            char buffer[500] = {'\0'};
+            Get_Fram(buffer);
         }
 
-    else
+    }else{
       P1->OUT &= ~BIT0;                     // P1.0 = 0
       is_covered = 0;
+
+    }
 }

@@ -40,8 +40,9 @@ void Write_Address(uint32_t addr);
 // Custom Functions
 void Get_Fram_Index();
 void Set_Fram_Index();
-void Store_Time(uint8_t entry, uint16_t year, uint16_t month_day, uint16_t week_hour, uint16_t minute_seconds);
+void Store_Time();
 int Get_Time(int index, char *buffer);
 void Clear_FRAM();
+void Get_Fram(char *buffer);
 
 #endif /* SPI_H_ */

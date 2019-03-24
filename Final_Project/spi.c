@@ -36,7 +36,8 @@ void SPI_FRAM_init(void)
     // Enable eUSCIA1 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 17); /* enable IRQ 17 => EUSCIA1*/
 
-    Get_Fram_Index();
+    //Get_Fram_Index();
+    Clear_FRAM();
 
 }
 
@@ -249,7 +250,7 @@ void Write_Address(uint32_t addr)
 
 /************************** Custom Functions **************************************/
 int fram_index; // Address of FRAM memory last wrote
-const int index_offset = 16; // Number of bytes index is offset (due to index being written into memory)
+const int index_offset = 2; // Number of bytes index is offset (due to index being written into memory)
 
 /*
  * Get the fram index stored in the first 2 bytes of memory
@@ -279,38 +280,97 @@ void Set_Fram_Index(){
  *          Byte 9: Seconds
  * @param Variables for each of the registers
  */
-void Store_Time(uint8_t entry, uint16_t year, uint16_t month_day, uint16_t week_hour, uint16_t minute_seconds){
+void Store_Time(){
 
-    // Write date/time into fram
-    Write8(fram_index++, entry);
-    Write8(fram_index++, year & 0xFF);
-    Write8(fram_index++, year >> 8);
-    Write8(fram_index++, month_day & 0xFF);
-    Write8(fram_index++, month_day >> 8);
-    Write8(fram_index++, week_hour & 0xFF);
-    Write8(fram_index++, week_hour >> 8);
-    Write8(fram_index++, minute_seconds & 0xFF);
-    Write8(fram_index++, minute_seconds >> 8);
+    uint8_t month = RTCMON;
+    uint8_t day =  RTCDAY;
+    uint16_t year = RTCYEAR;
+    uint8_t hour = RTCHOUR;
+    uint8_t minute = RTCMIN;
+    uint8_t second = RTCSEC;
+
+    Write8(fram_index++, RTCMON); // month
+    Write8(fram_index++, RTCDAY); // byte day
+    Write8(fram_index++, RTCYEAR >> 8); // byte year 1
+    Write8(fram_index++, RTCYEAR & 0xFF); // byte year 2
+    Write8(fram_index++, RTCHOUR); // byte hour
+    Write8(fram_index++, RTCMIN); // byte minute
+    Write8(fram_index++, RTCSEC); // byte second
 
     Set_Fram_Index();
 
 }
 
+int data_size = 7; //Bytes of data stored for each time entry
+
 /*
- * Get all entry/exit times stored in fram
+ * Get the time for a specific index stored in FRAM
  * @param index of entry to read (first entry is 1)
  *        buffer array to store data retrieved (9 bytes of data)
  * @return 1 if data successfully retrieved, 0 if index is out of bounds
  */
 int Get_Time(int index, char *buffer){
     // Check if index is out of bounds
-    if(index <= ((fram_index-index_offset) + 1) / 9){
+    if(index <= ((fram_index-index_offset) + 1) / data_size){
 
-    int i;
-    // Get 9 bytes of data stored at index
-    for(i=index_offset;i<(9+index_offset);i++){
-        buffer[i-index_offset] = Read8(index+i);
-    }
+        int i;
+        char temp;
+        int start = index_offset + (data_size * (index-1));
+        int buffer_index = 0;
+        int iter = 0;
+
+        // Get data_size bytes of data stored at index
+        for(i = start; i < start + data_size; i++){
+            switch(iter++){
+                case 0: // Month
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0';
+                    buffer[buffer_index++] = (temp & 0xF) + '0';
+                    buffer[buffer_index++] = '/';
+                break;
+
+                case 1: // Day
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0';
+                    buffer[buffer_index++] = (temp & 0xF) + '0';
+                    buffer[buffer_index++] = '/';
+                break;
+
+                case 2: // Year
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0'; // First Digit (2)
+                    buffer[buffer_index++] = (temp & 0xF) + '0'; // Second Digit (0)
+                break;
+
+                case 3: // Year
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0'; // Third Digit (1)
+                    buffer[buffer_index++] = (temp & 0xF) + '0'; // Fourth Digit (9)
+                    buffer[buffer_index++] = ' ';
+                break;
+
+                case 4: // Hour
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0';
+                    buffer[buffer_index++] = (temp & 0xF) + '0';
+                    buffer[buffer_index++] = ':';
+                break;
+
+                case 5: // Minute
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0';
+                    buffer[buffer_index++] = (temp & 0xF) + '0';
+                    buffer[buffer_index++] = ':';
+                break;
+
+                case 6: // Second
+                    temp = Read8(i);
+                    buffer[buffer_index++] = (temp >> 4) + '0';
+                    buffer[buffer_index++] = (temp & 0xF) + '0';
+                    buffer[buffer_index++] = ',';
+                break;
+            }
+        }
 
         return 1;
 
@@ -320,10 +380,21 @@ int Get_Time(int index, char *buffer){
     }
 }
 
+void Get_Fram(char *buffer){
+    int i;
+    char c;
+    for(i=0;i<fram_index;i++){
+        c = Read8(i);
+        buffer[i] = c;
+    }
+}
+
 /*
  * Clears all FRAM memory spaces to 0s
  */
 void Clear_FRAM(){
+
+    Get_Fram_Index();
 
    // Wipe memory
     int i;
@@ -332,5 +403,7 @@ void Clear_FRAM(){
    }
 
    // Reset fram index
-   fram_index = 0;
+   fram_index = index_offset;
+   Set_Fram_Index();
+   //Get_Fram_Index();
 }

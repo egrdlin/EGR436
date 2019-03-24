@@ -41,13 +41,16 @@ void init_rtc(){
             RTC_C_CTL13_TEV_0;
 
     // TODO: Set date based on user input from app/computer
-    RTC_C->YEAR = 0x2016;                   // Year = 0x2016
-    RTC_C->DATE = (0x4 << RTC_C_DATE_MON_OFS) | // Month = 0x04 = April
-            (0x05 | RTC_C_DATE_DAY_OFS);    // Day = 0x05 = 5th
+    RTC_C->YEAR = 0x2019;                   // Year = 0x2019
+    RTC_C->DATE = (0x3 << RTC_C_DATE_MON_OFS) | // Month = 0x03 = March
+            (0x13 | RTC_C_DATE_DAY_OFS);    // Day = 0x13 = 13th
     RTC_C->TIM1 = (0x01 << RTC_C_TIM1_DOW_OFS) | // Day of week = 0x01 = Monday
             (0x10 << RTC_C_TIM1_HOUR_OFS);  // Hour = 0x10
     RTC_C->TIM0 = (0x32 << RTC_C_TIM0_MIN_OFS) | // Minute = 0x32
             (0x45 << RTC_C_TIM0_SEC_OFS);   // Seconds = 0x45
+
+
+
 
     // Start RTC calendar mode
     RTC_C->CTL13 = RTC_C->CTL13 & ~(RTC_C_CTL13_HOLD);
