@@ -89,13 +89,17 @@ void uart_check_command(){
 
      if(uart_comp_command(READ_COMMAND)){
 
-         char buffer[4] = "10";
+         char buffer[10];
+
+         int entries = Get_Num_Entries();
+
+         sprintf(buffer, "%i", entries);
 
          uart_data_TX(buffer);
 
 
          char buffer2[50];
-         int entries = 10;
+         //int entries = 15;
          volatile int i,j;
 
          //Get_Time(1, buffer2);

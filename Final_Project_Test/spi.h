@@ -45,5 +45,6 @@ int Get_Time(int index, char *buffer);
 void Clear_FRAM();
 void Get_Fram(char *buffer);
 void load_fram();
+int Get_Num_Entries();
 
 #endif /* SPI_H_ */

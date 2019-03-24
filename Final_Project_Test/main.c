@@ -29,6 +29,8 @@ void main(void)
 
     load_fram();
 
+    Get_Num_Entries();
+
     while (1){
 
             //Get_Time(0,buffer);
