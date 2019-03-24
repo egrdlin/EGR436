@@ -6,3 +6,6 @@ Lab1/Debug/makefile
 Lab1/Debug/Lab1_linkInfo.xml
 Lab1/Debug/Lab1.map
 Lab1/.launches/Lab1.launch
+
+*/Debug
+*/.launches
