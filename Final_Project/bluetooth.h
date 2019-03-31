@@ -3,7 +3,7 @@
 
 #define BUFFER_SIZE 100
 
-void Init_bluetooth();
+void Init_Bluetooth();
 void ble_data_TX(char *data);
 //void ble_Clear_RX_Buffer();
 //void Get_RX_Buffer(char *data);

@@ -278,7 +278,6 @@ void Set_Fram_Index(){
  *          Byte 6: Day of Week
  *          Byte 7: Hour
  *          Byte 8: Minute
- *          Byte 9: Seconds
  * @param Variables for each of the registers
  */
 void Store_Time(){
@@ -296,7 +295,7 @@ void Store_Time(){
     Write8(fram_index++, RTCYEAR & 0xFF); // byte year 2
     Write8(fram_index++, RTCHOUR); // byte hour
     Write8(fram_index++, RTCMIN); // byte minute
-    Write8(fram_index++, RTCSEC); // byte second
+    //Write8(fram_index++, RTCSEC); // byte second
 
     Set_Fram_Index();
 
@@ -312,19 +311,19 @@ void load_fram(){
     uint8_t second = 0x11;
     uint16_t count = 12345;
 
-    int i;
-    for(i=0; i<10; i++){
-        Write8(fram_index++, month); // month
-        Write8(fram_index++, day); // byte day
-        Write8(fram_index++, year >> 8); // byte year 1
-        Write8(fram_index++, year & 0xFF); // byte year 2
-        Write8(fram_index++, hour); // byte hour
-        Write8(fram_index++, minute); // byte minute
-        Write8(fram_index++, second); // byte second
-
-        Write8(fram_index++, count >> 8); // byte bee count 1
-        Write8(fram_index++, count & 0xFF); // byte bee count 2
-    }
+//    int i;
+//    for(i=0; i<10; i++){
+//        Write8(fram_index++, month); // month
+//        Write8(fram_index++, day); // byte day
+//        Write8(fram_index++, year >> 8); // byte year 1
+//        Write8(fram_index++, year & 0xFF); // byte year 2
+//        Write8(fram_index++, hour); // byte hour
+//        Write8(fram_index++, minute); // byte minute
+//        //Write8(fram_index++, second); // byte second
+//
+//        Write8(fram_index++, count >> 8); // byte bee count 1
+//        Write8(fram_index++, count & 0xFF); // byte bee count 2
+//    }
 
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
@@ -332,7 +331,7 @@ void load_fram(){
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x10); // byte hour
     Write8(fram_index++, 0x15); // byte minute
-    Write8(fram_index++, 0x00); // byte second
+    //Write8(fram_index++, 0x00); // byte second
 
     count = 12345;
     Write8(fram_index++, count >> 8); // byte bee count 1
@@ -344,7 +343,7 @@ void load_fram(){
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x11); // byte hour
     Write8(fram_index++, 0x30); // byte minute
-    Write8(fram_index++, 0x00); // byte second
+    //Write8(fram_index++, 0x00); // byte second
 
     count = 23451;
     Write8(fram_index++, count >> 8); // byte bee count 1
@@ -356,7 +355,7 @@ void load_fram(){
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x12); // byte hour
     Write8(fram_index++, 0x45); // byte minute
-    Write8(fram_index++, 0x00); // byte second
+    //Write8(fram_index++, 0x00); // byte second
 
     count = 34512;
     Write8(fram_index++, count >> 8); // byte bee count 1
@@ -368,7 +367,7 @@ void load_fram(){
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x13); // byte hour
     Write8(fram_index++, 0x00); // byte minute
-    Write8(fram_index++, 0x00); // byte second
+    //Write8(fram_index++, 0x00); // byte second
 
     count = 45123;
     Write8(fram_index++, count >> 8); // byte bee count 1
@@ -380,7 +379,7 @@ void load_fram(){
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x14); // byte hour
     Write8(fram_index++, 0x15); // byte minute
-    Write8(fram_index++, 0x00); // byte second
+    //Write8(fram_index++, 0x00); // byte second
 
     count = 51234;
     Write8(fram_index++, count >> 8); // byte bee count 1
@@ -390,7 +389,7 @@ void load_fram(){
 
 }
 
-int data_size = 9; //Bytes of data stored for each time entry
+const int data_size = 8; //Bytes of data stored for each time entry
 
 int Get_Num_Entries(){
     return ((fram_index-index_offset)) / data_size;
@@ -403,6 +402,9 @@ int Get_Num_Entries(){
  * @return 1 if data successfully retrieved, 0 if index is out of bounds
  */
 int Get_Time(int index, char *buffer){
+
+    int test = Get_Num_Entries();
+
     // Check if index is out of bounds
     if(index <= ((fram_index-index_offset)) / data_size){
 
@@ -466,13 +468,13 @@ int Get_Time(int index, char *buffer){
                     temp = Read8(i);
                     buffer[buffer_index++] = (temp >> 4) + '0';
                     buffer[buffer_index++] = (temp & 0xF) + '0';
-                    buffer[buffer_index++] = ':';
+                    buffer[buffer_index++] = ',';
                 break;
 
-                case 6: // Second
-                    temp = Read8(i);
-                    buffer[buffer_index++] = (temp >> 4) + '0';
-                    buffer[buffer_index++] = (temp & 0xF) + '0';
+//                case 6: // Second
+//                    temp = Read8(i);
+//                    buffer[buffer_index++] = (temp >> 4) + '0';
+//                    buffer[buffer_index++] = (temp & 0xF) + '0';
 
 //                    buffer[buffer_index++] = ' ';
 //
@@ -487,11 +489,11 @@ int Get_Time(int index, char *buffer){
 //                        buffer[buffer_index++] = 'P';
 //                        buffer[buffer_index++] = 'M';
 //                    }
+//
+//                    buffer[buffer_index++] = ',';
+//                break;
 
-                    buffer[buffer_index++] = ',';
-                break;
-
-                case 7: // Bee count byte 1
+                case 6: // Bee count byte 1
                     // Mod 10 gets last digit
                     // / 10 gets rid of last digit
 
@@ -549,12 +551,6 @@ void Get_Fram(char *buffer){
 void Clear_FRAM(){
 
     Get_Fram_Index();
-
-   // Wipe memory
-//    int i;
-//   for(i=0; i<fram_index;i++){
-//       Write8(i,'0');
-//   }
 
    // Reset fram index
    fram_index = index_offset;

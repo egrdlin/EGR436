@@ -81,62 +81,41 @@ void EUSCIA0_IRQHandler(void)
  */
 void uart_check_command(){
     // Commands
-    // TODO: Add command to set date/time
-    // TODO: Add command to calibrate sensors
     const char READ_COMMAND[] = "READ";
     const char CLEAR_COMMAND[] = "CLEAR";
     const char READY_COMMAND[] = "READY";
 
-     if(uart_comp_command(READ_COMMAND)){
+     // Check for request to read data
+     if(!strcmp(READ_COMMAND,uart_buffer)){
 
-         char buffer[10];
+        // Get and transmit number of entries
+        char buffer[10];
+        int entries = Get_Num_Entries();
+        sprintf(buffer, "%i", entries);
+        uart_data_TX(buffer);
 
-         int entries = Get_Num_Entries();
-
-         sprintf(buffer, "%i", entries);
-
-         uart_data_TX(buffer);
-
-
-         char buffer2[50];
-         //int entries = 15;
-         volatile int i,j;
-
-         //Get_Time(1, buffer2);
-         //uart_data_TX(buffer2);
+        char buffer2[50];
+        int i,j;
 
         for(i=0;i<entries;i++){
 
+            // Check for READY command to start next data transmission
             uart_reset_transmission();
-            while(!uart_comp_command(READY_COMMAND));
+            while(strcmp(READY_COMMAND,uart_buffer));
 
-             Get_Time(i+1, buffer2);
-
-             uart_data_TX(buffer2);
-
-             //for (j = 20000; j > 0; j--);        // Delay
-             //delay_ms(500);
+            // Transmit next data
+            if(!Get_Time(i+1, buffer2))
+                fprintf(stderr, "Get Time Failed\n");
+            uart_data_TX(buffer2);
          }
 
-
-        /*
-        // TODO: Transmit date/time in format recognized by excel
-        char buffer[10];
-        buffer[9] = ',';
-        int index = 0;
-
-        // Keep reading until index is invalid
-        while(Get_Time(0, buffer) != 0){
-            uart_data_TX(buffer);
-            index++;
-        }*/
-
         uart_reset_transmission();
 
-    }else if(uart_comp_command(CLEAR_COMMAND)){
-        Clear_FRAM();
-        uart_reset_transmission();
     }
+//     else if(uart_comp_command(CLEAR_COMMAND)){
+//        Clear_FRAM();
+//        uart_reset_transmission();
+//    }
 }
 
 /*
@@ -144,7 +123,7 @@ void uart_check_command(){
  * so a new transmission can be received.
  */
 void uart_reset_transmission(){
-    //received_transmission = false;
+    uart_buffer[0] = '\0';
     uart_buffer_index = 0;
 }
 
@@ -183,23 +162,4 @@ void uart_data_TX(char *data){
 
     // Wait until the last byte is completely sent
     while(UCA0STATW & UCBUSY);
-}
-
-bool uart_comp_command(const char *checkCommand){
-    bool compare = true;
-
-    // Check command length
-    if(uart_buffer_index < strlen(checkCommand) + 1){
-        compare = false;
-    }else{
-        int i;
-        for(i=0; i<strlen(checkCommand); i++){
-            if(checkCommand[i] != uart_buffer[i]){
-                compare = false;
-                break;
-            }
-        }
-    }
-
-    return compare;
 }

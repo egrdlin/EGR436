@@ -14,7 +14,7 @@ static char ble_buffer[BUFFER_SIZE];
 /*
  * Initialize settings for bluetooth module
  */
-void Init_bluetooth(){
+void Init_Bluetooth(){
     WDT_A->CTL = WDT_A_CTL_PW |             // Stop watchdog timer
             WDT_A_CTL_HOLD;
 
@@ -56,30 +56,29 @@ void Init_bluetooth(){
 }
 
 /*
- * Transmit a string of data over UART
+ * Transmit a string of data over Bluetooth to module
+ * MUST END IN '\0'. Will not transmit '\0'
  */
 void ble_data_TX(char *data){
-    int tx_index = 0;
 
-    int length = (strlen(data));
-    while(tx_index <= (strlen(data)+1)){
+    int i;
+    for(i=0; i<strlen(data); i++){
 
         // Wait for TX buffer to be ready for new data
         while(!(UCA2IFG & UCTXIFG));
 
         // Push data to TX buffer
-        UCA2TXBUF = data[tx_index];
-
-        // Increment index
-        tx_index++;
+        UCA2TXBUF = data[i];
     }
 
     // Wait until the last byte is completely sent
     while(UCA2STATW & UCBUSY);
 }
 
-/* EUSCI A2 UART ISR - Echoes data back to PC host */
-// P3.2 and P3.3 for RX and TX
+/*
+ * EUSCI A2 UART ISR - Get characters received over Bluetooth from phone
+ * P3.2 and P3.3 for RX and TX
+ */
 void EUSCIA2_IRQHandler(void)
 {
     // Check for RX interrupt
@@ -106,43 +105,22 @@ void EUSCIA2_IRQHandler(void)
  * Check user input for known commands
  */
 void ble_check_command(){
-//
-//    // Commands
-//    const char DELETE_COMMAND[] = "DELETE ";
-//    //const char STORE_COMMAND[] = "STORE ";
-//    const char READ_COMMAND[] = "READ ";
-//    const char DIR_COMMAND[] = "DIR";
-//    const char MEM_COMMAND[] = "MEM";
-//    const char CLEAR_COMMAND[] = "CLEAR";
-//
-//    if(ble_comp_command(DELETE_COMMAND)){
-//        int ind = ble_buffer[strlen(DELETE_COMMAND)] - '0';
-//        Delete_Poem(ind);
-//        ble_reset_transmission();
-//
-//    }else if(ble_comp_command(READ_COMMAND)){
-//        char poem[1000] = {0};
-//        int ind = ble_buffer[strlen(READ_COMMAND)] - '0';
-//        Get_Poem(ind, poem);
-//        ble_data_TX(poem);
-//        ble_reset_transmission();
-//
-//    }else if(ble_comp_command(DIR_COMMAND)){
-//        char directory[1000];
-//        Directory_TX(directory);
-//        ble_data_TX(directory);
-//        ble_reset_transmission();
-//
-//    }else if(ble_comp_command(MEM_COMMAND)){
-//        char data[20];
-//        Get_Size(data);
-//        ble_data_TX(data);
-//        ble_reset_transmission();
-//
-//    }else if(ble_comp_command(CLEAR_COMMAND)){
-//        Clear_FRAM();
-//        ble_reset_transmission();
-//    }
+
+    // Commands
+    const char TEST_COMMAND[] = "TEST";
+
+    ble_buffer[ble_buffer_index] = '\0'; // Temporarily make buffer a string to use with strcmp
+
+    if(!strcmp(TEST_COMMAND,ble_buffer)){
+        char data[20];
+        float num = 3.4567;
+        sprintf(data, "This is a number %0.2f!", num);
+        ble_data_TX(data);
+        //ble_data_TX("AT+ADDR?"); // Example AT command
+        ble_reset_transmission();
+    }
+
+    // Use similar else statements to check each command
 }
 
 /*
@@ -150,24 +128,6 @@ void ble_check_command(){
  * so a new transmission can be received.
  */
 void ble_reset_transmission(){
+    ble_buffer[0] = '\0';
     ble_buffer_index = 0;
-}
-
-bool ble_comp_command(const char *checkCommand){
-    bool compare = true;
-
-//    // Check command length
-//    if(ble_buffer_index < strlen(checkCommand)){
-//        compare = false;
-//    }else{
-//        int i;
-//        for(i=0; i<strlen(checkCommand); i++){
-//            if(checkCommand[i] != ble_buffer[i]){
-//                compare = false;
-//                break;
-//            }
-//        }
-//    }
-
-    return compare;
 }

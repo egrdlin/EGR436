@@ -25,7 +25,7 @@
 uint8_t  _nAddressSizeBytes;
 
 // General FRAM Functions
-void SPI_FRAM_init(void);
+void Init_SPI_FRAM(void);
 void SPI_A1_pin_init(void);
 void Read_ID(uint16_t *manufacturerID, uint16_t *productID);
 uint8_t SPI_rx();
@@ -44,5 +44,7 @@ void Store_Time();
 int Get_Time(int index, char *buffer);
 void Clear_FRAM();
 void Get_Fram(char *buffer);
+void load_fram();
+int Get_Num_Entries();
 
 #endif /* SPI_H_ */

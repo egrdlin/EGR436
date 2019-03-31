@@ -1,6 +1,6 @@
 #ifndef RTC_H_
 #define RTC_H_
 
-void init_rtc();
+void Init_RTC();
 
 #endif /* RTC_H_ */

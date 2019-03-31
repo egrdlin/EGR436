@@ -1,12 +1,6 @@
 #include "msp.h"
 
 void init_rtc(){
-//    WDT_A->CTL = WDT_A_CTL_PW |             // Stop WDT
-//            WDT_A_CTL_HOLD;
-
-//    P1->DIR |= BIT0 ;                       // Configure P1.0 LED
-//    P1->OUT &= ~( BIT0 );
-
     PJ->SEL0 |= BIT0 | BIT1;                // set LFXT pin as second function
 
     CS->KEY = CS_KEY_VAL ;                  // Unlock CS module for register access
@@ -77,7 +71,6 @@ void RTC_C_IRQHandler(void)
 {
     if (RTC_C->CTL0 & RTC_C_CTL0_TEVIFG)
     {
-        P1->OUT ^= BIT0;
 
         // Unlock the RTC module and clear time event interrupt flag
         RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;

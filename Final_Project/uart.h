@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void UART_init();
+void Init_UART();
 void uart_check_command();
 void uart_reset_transmission();
 void uart_clear_buffer();

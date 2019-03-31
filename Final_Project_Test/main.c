@@ -20,18 +20,17 @@ void main(void)
     init_rtc();
     //init_sensor();
 
-
-
-    char buffer[500] = {'\0'};
-    char buffer2[50] = {'\0'};
-    char buffer3[50] = {'\0'};
-
-
     load_fram();
 
-    Get_Num_Entries();
+//    int num = Get_Num_Entries(), i;
+//    char buffer[50];
+//    for(i=1;i<num+1;i++){
+//        Get_Time(i, buffer);
+//    }
 
     while (1){
+
+
 
             //Get_Time(0,buffer);
 
