@@ -1,4 +1,6 @@
 #include "msp.h"
+#include "adc.h"
+#include "spi.h"
 
 void Init_RTC(){
     PJ->SEL0 |= BIT0 | BIT1;                // set LFXT pin as second function
@@ -43,9 +45,6 @@ void Init_RTC(){
     RTC_C->TIM0 = (0x32 << RTC_C_TIM0_MIN_OFS) | // Minute = 0x32
             (0x45 << RTC_C_TIM0_SEC_OFS);   // Seconds = 0x45
 
-
-
-
     // Start RTC calendar mode
     RTC_C->CTL13 = RTC_C->CTL13 & ~(RTC_C_CTL13_HOLD);
 
@@ -66,16 +65,49 @@ void Init_RTC(){
 
 /*
  * ISR for internal RTC
+ * Triggered when minute changes
+ * Store in/out count data every 15 minutes
  */
 void RTC_C_IRQHandler(void)
 {
+
+    /****** Sensor test ******/
+    // Trigger every minute
     if (RTC_C->CTL0 & RTC_C_CTL0_TEVIFG)
     {
-
-        // Unlock the RTC module and clear time event interrupt flag
-        RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;
-
-        // Re-lock the RTC
-        RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);
+//        uint16_t inCount, outCount;
+//        inCount = Get_In_Count();
+//        outCount = Get_Out_Count();
+//        // Store time and count values, reset counts afterwards
+//        Store_Time(inCount, outCount);
+//
+//        fprintf(stderr,"I: %i\nO: %i\nM: %x\n", inCount, outCount, RTCMIN);
+//
+//        Reset_Counts();
     }
+
+    // Unlock the RTC module and clear time event interrupt flag
+    RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;
+
+    // Re-lock the RTC
+    RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);
+
+    /***********************/
+
+    // Check for minute time event interrupt
+    // Check that minute is divisible by 15
+//    if (RTC_C->CTL0 & RTC_C_CTL0_TEVIFG && RTCMIN % 15 == 0)
+//    {
+//
+//        // Store time and count values, reset counts afterwards
+//        Store_Time(Get_In_Count(), Get_Out_Count());
+//
+//        Reset_Counts();
+//    }
+//
+//    // Unlock the RTC module and clear time event interrupt flag
+//    RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;
+//
+//    // Re-lock the RTC
+//    RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);
 }

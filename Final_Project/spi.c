@@ -24,6 +24,8 @@ void Init_SPI_FRAM(void)
      * 3-pin SPI, sychronous mode, SMCLK */
     EUSCI_A1->CTLW0 = 0x69C1;
 
+
+    // TODO: Update to use 32kHz clock
     EUSCI_A1->BRW = 1; /* 3MHz / 1 = 3MHz*/
 
     EUSCI_A1->CTLW0 &= ~ EUSCI_A_CTLW0_SWRST; /* Enable UCA1 after configuration*/
@@ -39,8 +41,6 @@ void Init_SPI_FRAM(void)
 
     //Get_Fram_Index();
     Clear_FRAM();
-
-    load_fram();
 
 }
 
@@ -273,16 +273,18 @@ void Set_Fram_Index(){
 /*
  * Store the time of a bee entry/exit in memory
  * Time is stored in four 16-bit registers. An extra byte of data is stored to indicate entry or exit.
- * Format:  Byte 1: 1 (entry) or 0 (exit)
- *          Byte 2-3: Year
- *          Byte 4: Month
- *          Byte 5: Day
- *          Byte 6: Day of Week
- *          Byte 7: Hour
- *          Byte 8: Minute
- * @param Variables for each of the registers
+ * Format:  Byte 1: Month
+ *          Byte 2: Day
+ *          Byte 3: Year 1
+ *          Byte 4: Year 2
+ *          Byte 5: Hour
+ *          Byte 6: Minute
+ *          Byte 7: In Count 1
+ *          Byte 8: In Count 2
+ *          Byte 9: Out Count 1
+ *          Byte 10: Out Count 2
  */
-void Store_Time(){
+void Store_Time(uint16_t inCount, uint16_t outCount){
 
     uint8_t month = RTCMON;
     uint8_t day =  RTCDAY;
@@ -291,54 +293,46 @@ void Store_Time(){
     uint8_t minute = RTCMIN;
     uint8_t second = RTCSEC;
 
+    // Store time, bee count going in, and bee count going out
     Write8(fram_index++, RTCMON); // month
     Write8(fram_index++, RTCDAY); // byte day
     Write8(fram_index++, RTCYEAR >> 8); // byte year 1
     Write8(fram_index++, RTCYEAR & 0xFF); // byte year 2
     Write8(fram_index++, RTCHOUR); // byte hour
     Write8(fram_index++, RTCMIN); // byte minute
-    //Write8(fram_index++, RTCSEC); // byte second
+    Write8(fram_index++, inCount >> 8); // byte in bee count 1
+    Write8(fram_index++, inCount & 0xFF); // byte in bee count 2
+    Write8(fram_index++, outCount >> 8); // byte out bee count 1
+    Write8(fram_index++, outCount & 0xFF); // byte out bee count 2
 
     Set_Fram_Index();
 
 }
 
+/*
+ * Load FRAM with values for testing
+ */
 void load_fram(){
 
-//    uint8_t month = 0x03;
-//    uint8_t day =  0x24;
-//    uint16_t year = 0x2019;
-//    uint8_t hour = 0x12;
-//    uint8_t minute = 0x30;
-//    uint8_t second = 0x11;
     uint16_t count = 12345;
 
-//    int i;
-//    for(i=0; i<10; i++){
-//        Write8(fram_index++, month); // month
-//        Write8(fram_index++, day); // byte day
-//        Write8(fram_index++, year >> 8); // byte year 1
-//        Write8(fram_index++, year & 0xFF); // byte year 2
-//        Write8(fram_index++, hour); // byte hour
-//        Write8(fram_index++, minute); // byte minute
-//        //Write8(fram_index++, second); // byte second
-//
-//        Write8(fram_index++, count >> 8); // byte bee count 1
-//        Write8(fram_index++, count & 0xFF); // byte bee count 2
-//    }
-
+    /**************************************************/
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
     Write8(fram_index++, 0x20); // byte year 1
     Write8(fram_index++, 0x19); // byte year 2
     Write8(fram_index++, 0x10); // byte hour
     Write8(fram_index++, 0x15); // byte minute
-    //Write8(fram_index++, 0x00); // byte second
 
     count = 12345;
     Write8(fram_index++, count >> 8); // byte bee count 1
     Write8(fram_index++, count & 0xFF); // byte bee count 2
 
+    count = 22345;
+    Write8(fram_index++, count >> 8); // byte bee count 1
+    Write8(fram_index++, count & 0xFF); // byte bee count 2
+
+    /**************************************************/
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
     Write8(fram_index++, 0x20); // byte year 1
@@ -347,10 +341,15 @@ void load_fram(){
     Write8(fram_index++, 0x30); // byte minute
     //Write8(fram_index++, 0x00); // byte second
 
-    count = 23451;
+    count = 33345;
     Write8(fram_index++, count >> 8); // byte bee count 1
     Write8(fram_index++, count & 0xFF); // byte bee count 2
 
+    count = 44445;
+    Write8(fram_index++, count >> 8); // byte bee count 1
+    Write8(fram_index++, count & 0xFF); // byte bee count 2
+
+    /**************************************************/
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
     Write8(fram_index++, 0x20); // byte year 1
@@ -359,10 +358,15 @@ void load_fram(){
     Write8(fram_index++, 0x45); // byte minute
     //Write8(fram_index++, 0x00); // byte second
 
-    count = 34512;
+    count = 12345;
     Write8(fram_index++, count >> 8); // byte bee count 1
     Write8(fram_index++, count & 0xFF); // byte bee count 2
 
+    count = 22345;
+    Write8(fram_index++, count >> 8); // byte bee count 1
+    Write8(fram_index++, count & 0xFF); // byte bee count 2
+
+    /**************************************************/
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
     Write8(fram_index++, 0x20); // byte year 1
@@ -371,10 +375,15 @@ void load_fram(){
     Write8(fram_index++, 0x00); // byte minute
     //Write8(fram_index++, 0x00); // byte second
 
-    count = 45123;
+    count = 22345;
     Write8(fram_index++, count >> 8); // byte bee count 1
     Write8(fram_index++, count & 0xFF); // byte bee count 2
 
+    count = 12345;
+    Write8(fram_index++, count >> 8); // byte bee count 1
+    Write8(fram_index++, count & 0xFF); // byte bee count 2
+
+    /**************************************************/
     Write8(fram_index++, 0x03); // month
     Write8(fram_index++, 0x24); // byte day
     Write8(fram_index++, 0x20); // byte year 1
@@ -387,11 +396,15 @@ void load_fram(){
     Write8(fram_index++, count >> 8); // byte bee count 1
     Write8(fram_index++, count & 0xFF); // byte bee count 2
 
+    count = 21345;
+    Write8(fram_index++, count >> 8); // byte bee count 1
+    Write8(fram_index++, count & 0xFF); // byte bee count 2
+
     Set_Fram_Index();
 
 }
 
-const int data_size = 8; //Bytes of data stored for each time entry
+const int data_size = 10; //Bytes of data stored for each time entry
 
 int Get_Num_Entries(){
     return ((fram_index-index_offset)) / data_size;
@@ -408,13 +421,13 @@ int Get_Time(int index, char *buffer){
     int test = Get_Num_Entries();
 
     // Check if index is out of bounds
-    if(index <= ((fram_index-index_offset)) / data_size){
+    if(index > 0 && index <= ((fram_index-index_offset)) / data_size){
 
-        int i;
+        int i,j;
         char temp, char1, char2;
         int start = index_offset + (data_size * (index-1));
         int buffer_index = 0;
-        int iter = 0;
+        //int iter = 0;
         uint16_t num;
 
         // Get data_size bytes of data stored at index
@@ -422,7 +435,10 @@ int Get_Time(int index, char *buffer){
         //for(i = start; i < start + data_size; i++){
             //buffer[buffer_index++] = Read8(i);
 
-            switch(iter++){
+            //fprintf(stderr, "i:%i\n", i);
+
+            //switch(iter++){
+            switch(i-start){
                 case 0: // Month
                     temp = Read8(i);
                     buffer[buffer_index++] = (temp >> 4) + '0';
@@ -452,15 +468,6 @@ int Get_Time(int index, char *buffer){
 
                 case 4: // Hour
                     temp = Read8(i);
-
-                    // Determine if AM or PM, convert to 12 hour clock
-//                    if(temp > 0x12){
-//                        temp -= 12;
-//                        isAM = 0;
-//                    }else{
-//                        isAM = 1;
-//                    }
-
                     buffer[buffer_index++] = (temp >> 4) + '0';
                     buffer[buffer_index++] = (temp & 0xF) + '0';
                     buffer[buffer_index++] = ':';
@@ -473,29 +480,8 @@ int Get_Time(int index, char *buffer){
                     buffer[buffer_index++] = ',';
                 break;
 
-//                case 6: // Second
-//                    temp = Read8(i);
-//                    buffer[buffer_index++] = (temp >> 4) + '0';
-//                    buffer[buffer_index++] = (temp & 0xF) + '0';
-
-//                    buffer[buffer_index++] = ' ';
-//
-//                    // Add AM or PM
-//                    buffer[buffer_index++] = isAM ? 'A' : 'P';
-//                    buffer[buffer_index++] = 'M';
-
-//                    if(isAM){
-//                        buffer[buffer_index++] = isAM ? 'A' : 'P';
-//                        buffer[buffer_index++] = 'M';
-//                    }else{
-//                        buffer[buffer_index++] = 'P';
-//                        buffer[buffer_index++] = 'M';
-//                    }
-//
-//                    buffer[buffer_index++] = ',';
-//                break;
-
-                case 6: // Bee count byte 1
+                // In bee count bytes 1-2
+                case 6:
                     // Mod 10 gets last digit
                     // / 10 gets rid of last digit
 
@@ -504,7 +490,26 @@ int Get_Time(int index, char *buffer){
 
                     num = (char1 << 8) | (char2 & 0xFF);
 
-                    int j;
+                    for(j=4;j>=0;j--){
+                        buffer[buffer_index++] = ((num / (int)pow(10,j)) % 10) + '0';
+                    }
+
+                    buffer[buffer_index++] = ',';
+
+                    i++;
+
+                break;
+
+                // Out bee count bytes 1-2
+                case 8:
+                    // Mod 10 gets last digit
+                    // / 10 gets rid of last digit
+
+                    char1 = Read8(i);
+                    char2 = Read8(i+1);
+
+                    num = (char1 << 8) | (char2 & 0xFF);
+
                     for(j=4;j>=0;j--){
                         buffer[buffer_index++] = ((num / (int)pow(10,j)) % 10) + '0';
                     }
@@ -512,15 +517,8 @@ int Get_Time(int index, char *buffer){
                     // End with newline to go to next cell in excel
                     buffer[buffer_index++] = '\n';
 
-
+                    i++;
                 break;
-
-//                case 8: // Bee count byte 2
-//                    temp = Read8(i);
-//                    buffer[buffer_index++] = (temp >> 4);
-//                    buffer[buffer_index++] = (temp & 0xF);
-//                    buffer[buffer_index++] = '\n';
-//                break;
             }
 
         }

@@ -4,8 +4,9 @@
 #include "uart.h"
 #include "msp.h"
 #include "spi.h"
+#include "timer.h"
 
-#define BUFFER_SIZE 1000
+#define BUFFER_SIZE 50
 
 static int uart_buffer_index; // Current place in buffer
 static char uart_buffer[BUFFER_SIZE];
@@ -52,6 +53,9 @@ void Init_UART(){
     P1->OUT |= BIT0; /* pull low to start, pull high to end*/
 }
 
+uint32_t startTime; // Time first character was entered in buffer
+const uint32_t TIMEOUT = 200; // Time before buffer is reset
+
 /*
  * EUSCI A0 UART interrupt service routine
  * Code used from Resource Explorer example: msp432p401x_euscia0_uart_01 - eUSCI_A0 UART echo at 9600 baud using BRCLK = 12MHz
@@ -63,6 +67,18 @@ void EUSCIA0_IRQHandler(void)
         // Check if the TX buffer is empty first
         while(!(EUSCI_A0->IFG & EUSCI_A_IFG_TXIFG) && (EUSCI_A0->STATW & EUSCI_A_STATW_BUSY));
 
+        // Check if this is first character in buffer
+        if(uart_buffer_index == 0){
+
+            startTime = millis();
+
+        // Reset transmission if characters are in buffer for too long
+        // (protection against invalid commands messing up buffer)
+        }else if(millis() < startTime || millis() - startTime > TIMEOUT){
+            uart_reset_transmission();
+            startTime = millis();
+        }
+
         // Get character from RX buffer
         uint16_t received_char = EUSCI_A0->RXBUF;
 
@@ -72,6 +88,7 @@ void EUSCIA0_IRQHandler(void)
         // Increment buffer position or reset if it will go out of bounds
         uart_buffer_index = (uart_buffer_index+1) % BUFFER_SIZE;
 
+        // Clear interrupt flag
         EUSCI_A0->IFG &= ~EUSCI_A_IFG_RXIFG;
     }
 }
@@ -82,7 +99,6 @@ void EUSCIA0_IRQHandler(void)
 void uart_check_command(){
     // Commands
     const char READ_COMMAND[] = "READ";
-    //const char CLEAR_COMMAND[] = "CLEAR";
     const char READY_COMMAND[] = "READY";
 
      // Check for request to read data
@@ -112,10 +128,6 @@ void uart_check_command(){
         uart_reset_transmission();
 
     }
-//     else if(uart_comp_command(CLEAR_COMMAND)){
-//        Clear_FRAM();
-//        uart_reset_transmission();
-//    }
 }
 
 /*
@@ -132,11 +144,11 @@ void uart_reset_transmission(){
  */
 void uart_clear_buffer(){
 
-    int i;
-    for (i=0;i<BUFFER_SIZE;i++)
-    {
-        uart_buffer[i]=0;
-    }
+//    int i;
+//    for (i=0;i<BUFFER_SIZE;i++)
+//    {
+//        uart_buffer[i]=0;
+//    }
 
     uart_buffer_index=0;
 }

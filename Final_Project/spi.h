@@ -40,7 +40,7 @@ void Write_Address(uint32_t addr);
 // Custom Functions
 void Get_Fram_Index();
 void Set_Fram_Index();
-void Store_Time();
+void Store_Time(uint16_t inCount, uint16_t outCount);
 int Get_Time(int index, char *buffer);
 void Clear_FRAM();
 void Get_Fram(char *buffer);

@@ -25,7 +25,10 @@ int main()
     char port_name[20];
     int port;
 
-    printf("EGR 436 Lab 2: Data Storage and Retrieval\n\n");
+    printf("\n****************************************\n");
+    printf("\nEGR 436 Final Project: Honey Bee Counter\n");
+    printf("\nCreated by Don Lin and Ariel Magyar\n");
+    printf("\n****************************************\n\n");
 
     printf("------Serial Port Setup------\n");
     printf("Serial Port Number of UART Dongle: ");
@@ -87,10 +90,10 @@ int main()
 
     /* Main Program */
     while(1){
-        printf("\nEnter a Command\n");
-        printf("  \tREAD <number>: Display title and text of entry.\n");
-        printf("  \tCLEAR: Wipe all FRAM entries.\n");
-        printf("  \tQ: Quit program\n\n");
+        printf("Enter a Command:\n");
+        printf("  READ: Record bee count data to a csv file.\n");
+        printf("  Q:    Quit the program.\n\n");
+        printf("Entry: ");
         fflush(stdin);
         gets(entry);
 
@@ -107,36 +110,33 @@ int main()
 
             if(fptr == NULL){
                 printf("Unable to create file\n");
-                exit(EXIT_FAILURE);
+                //exit(EXIT_FAILURE);
+            }else{
+
+                transmit_string(entry);
+
+                // Get three bytes of number of entries
+                get_rx_data(10);
+                printf("RX Data: %s\n",rx_buffer);
+
+                int entries = atoi(rx_buffer);
+                printf("Entries: %i\n",entries);
+
+                // Loop for number of entries
+                int i;
+                for(i=0; i<entries; i++){
+                    transmit_string("READY");
+                    get_rx_data(75);
+                    printf("RX Data %i: %s\n",i,rx_buffer);
+                    fputs(rx_buffer, fptr);
+                    //PurgeComm(hMasterCOM, PURGE_RXCLEAR);
+
+                }
+
+                printf("Data saved to file.\n\n");
+                fclose(fptr);
+
             }
-
-            transmit_string(entry);
-
-            // Get three bytes of number of entries
-            get_rx_data(10);
-            printf("RX Data: %s\n",rx_buffer);
-
-            int entries = atoi(rx_buffer);
-            printf("Entries: %i\n",entries);
-
-            // Loop for number of entries
-
-            //get_rx_data(500);
-            //printf("RX Data %s\n",rx_buffer);
-
-
-            int i;
-            for(i=0; i<entries; i++){
-                transmit_string("READY");
-                get_rx_data(25);
-                printf("RX Data %i: %s\n",i,rx_buffer);
-                fputs(rx_buffer, fptr);
-                //PurgeComm(hMasterCOM, PURGE_RXCLEAR);
-
-            }
-
-            printf("Data saved to file.\n\n");
-            fclose(fptr);
 
         }else if(!strcmp(entry,"CLEAR")){
             //transmit_string("CLR");
