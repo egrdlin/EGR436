@@ -49,8 +49,8 @@ void Init_UART(){
 
     uart_clear_buffer();
 
-    P1->DIR |= BIT0; /* use P1.6 to manually select chip*/
-    P1->OUT |= BIT0; /* pull low to start, pull high to end*/
+//    P1->DIR |= BIT0; /* use P1.6 to manually select chip*/
+//    P1->OUT |= BIT0; /* pull low to start, pull high to end*/
 }
 
 uint32_t startTime; // Time first character was entered in buffer

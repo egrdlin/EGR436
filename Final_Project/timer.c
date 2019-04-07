@@ -45,7 +45,7 @@ void SysTick_Handler(void){
 //            Sample_ADC();
 //        }
 
-
+    //Sample_ADC();
 
     // Protect against going out of range
     if(tick < 0xFFFF-1){

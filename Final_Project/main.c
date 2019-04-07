@@ -11,8 +11,8 @@
 #include "spi.h"
 #include "uart.h"
 #include "bluetooth.h"
-#include "sensor.h"
 #include "timer.h"
+#include "power.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -23,23 +23,25 @@ void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
 
+    Init_Power();
+    Init_RTC();
     Init_SPI_FRAM();
     Init_UART();
     Init_Bluetooth();
-    Init_RTC();
-    Init_Sensor();
-    //Init_ADC();
+    Init_ADC();
     Init_Timer();
     //__enable_irq ( );
 
 
+    //uint32_t time
     // Might be moving this to a timer interrupt
     while (1){
 
-        //Sample_ADC();
-        uart_check_command();
-        ble_check_command();
+        //time = millis();
 
+        Sample_ADC();
+//        uart_check_command();
+//        ble_check_command();
 
     }
 
