@@ -33,15 +33,15 @@ void Init_ADC(){
      */
 
     // Configure Sensors 0-5 (P4.5, P4.4, P4.3, P4.2, P4.1, P4.0) for ADC
-//    P4->SEL1 |= BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0;
-//    P4->SEL0 |= BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0;
+    P4->SEL1 |= BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0;
+    P4->SEL0 |= BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0;
 
-    P4->SEL1 |= BIT5 | BIT4 | BIT3 | BIT2;
-    P4->SEL0 |= BIT5 | BIT4 | BIT3 | BIT2;
+//    P4->SEL1 |= BIT5 | BIT4 | BIT3 | BIT2;
+//    P4->SEL0 |= BIT5 | BIT4 | BIT3 | BIT2;
 
     // Configure Sensors 6-7 (P6.1, P6.0) for ADC
-//    P6->SEL1 |= BIT1 | BIT0;
-//    P6->SEL0 |= BIT1 | BIT0;
+    P6->SEL1 |= BIT1 | BIT0;
+    P6->SEL0 |= BIT1 | BIT0;
 
     // Map memory control registers to sensors
     sensor_memory_ctrl_reg[0] = ADC14_MCTLN_INCH_8;
@@ -119,7 +119,7 @@ void Init_ADC(){
 
 
 // Number of ADC measurements
-const int MAX_ADC = 4;
+const int MAX_ADC = 8;
 
 /*
  * Update the ADC input to be measured
@@ -127,7 +127,7 @@ const int MAX_ADC = 4;
 void Update_ADC(){
 
     ADC14->CTL0 &= ~ADC14_CTL0_ENC; // Disable conversion
-    sampleIndex = (sampleIndex + 1) % MAX_ADC; // Increment measurement to be sampled, wrap around at 3
+    sampleIndex = (sampleIndex + 1) % MAX_ADC; // Increment measurement to be sampled, wrap around at MAX_ADC-1
     ADC14->MCTL[0] = sensor_memory_ctrl_reg[sampleIndex]; // Set measurement to be sampled
     ADC14->CTL0 |= ADC14_CTL0_ENC; // Enable conversion
 }
@@ -176,17 +176,21 @@ const int TOLERANCE = 0x450; // Sensor sensitivity
 int isCovered = 0;
 
 // Arrays to keep track of in/out sensor states (covered or clear)
-bool outReading[4], inReading[4];
-bool lastInReading[4] = {false};
-bool lastOutReading[4] = {false};
+bool outReading[8], inReading[8];
+bool lastInReading[8] = {false};
+bool lastOutReading[8] = {false};
 
 // Current and voltage measurements
 uint32_t iBatNeg=0, iBatPos=0, iOutNeg=0, iOutPos=0, iSolarOutNeg=0, iSolarOutPos=0, vSolarIn=0, vSolarOut=0, vSolarBat=0;
 
 // Arrays to keep track of in/out sensor trigger times
-uint32_t inReadingTime[4], inReadingTimeHigh[4], outReadingTime[4], outReadingTimeHigh[4];
-uint32_t lastInReadingTime[4] = {0};
-uint32_t lastOutReadingTime[4] = {0};
+uint32_t inReadingTime[8], inReadingTimeHigh[8], outReadingTime[8], outReadingTimeHigh[8];
+uint32_t lastInReadingTime[8] = {0};
+uint32_t lastOutReadingTime[8] = {0};
+
+const int DEBOUNCE = 120;
+const int TIME_TOL = 150;
+
 
 // ADC14 interrupt service routine
 void ADC14_IRQHandler(void) {
@@ -216,16 +220,13 @@ void ADC14_IRQHandler(void) {
     if(Get_Recording_Status()){
 
         uint32_t currentTime = millis(); // Current system time
-        //const int debounce = 120; // Debounce time in ms
-        const int DEBOUNCE = 150;
-        const int TIME_TOL = 150;
-
         // Cycle through ADC for each measurement
-        int i,j=0;
-        for(i=0; i<MAX_ADC; i++){
+        //int i,j=0;
+        //int i;
+        //for(i=0; i<MAX_ADC; i++){
 
             // Check for interrupt pending at sensor i
-            if(ADC14->IFGR0 && sampleIndex == i){
+            //if(ADC14->IFGR0 && sampleIndex == i){
 
             // Read register
             uint32_t data = ADC14->MEM[0];
@@ -233,7 +234,7 @@ void ADC14_IRQHandler(void) {
             // Sensor measurement
             if(sampleIndex <= 7){
 
-                    //int j = sampleIndex / 2;
+                    int j = sampleIndex / 2;
 
 
                     // Check if even sensor to determine if in or out measurement
@@ -330,6 +331,7 @@ void ADC14_IRQHandler(void) {
                         }
 
                         j++;
+
                     }
 
                 // Current or voltage measurement
@@ -377,9 +379,10 @@ void ADC14_IRQHandler(void) {
                         break;
                     }
                 }
+
                 //break;
-            }
-        }
+            //}
+        //}
 
 
     }else{
