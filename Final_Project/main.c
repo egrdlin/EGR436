@@ -32,7 +32,6 @@ void main(void)
     Init_Timer();
     //__enable_irq ( );
 
-
     //uint32_t time
     // Might be moving this to a timer interrupt
     while (1){
@@ -40,8 +39,8 @@ void main(void)
         //time = millis();
 
         Sample_ADC();
-//        uart_check_command();
-//        ble_check_command();
+        uart_check_command();
+        ble_check_command();
 
     }
 

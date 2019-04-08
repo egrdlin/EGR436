@@ -72,8 +72,14 @@ void Init_RTC(){
 void Check_Recording(){
     if(RTCHOUR >= 6 && RTCHOUR < (9+12)){
         Start_Recording();
+        //__sleep();
+        //__no_operation();
     }else{
         Stop_Recording();
+        //__sleep();
+        //SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Do not wake up on exit from ISR
+        //SCB->SCR |= (SCB_SCR_SLEEPDEEP_Msk); // Set the deep sleep bit
+        //__sleep(); // Go to LPM 3
     }
 }
 

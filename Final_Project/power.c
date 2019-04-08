@@ -28,6 +28,7 @@ void Init_Power(){
  */
 void LP_boardInit()
 {
+
     P1->OUT =  0x00;    P1->DIR =  0xFF;
     P2->OUT =  0x00;    P2->DIR =  0xFF;
     P3->OUT =  0x00;    P3->DIR =  0xFF;

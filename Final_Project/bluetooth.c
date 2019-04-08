@@ -108,6 +108,13 @@ void ble_check_command(){
 
     // Commands
     const char TEST_COMMAND[] = "TEST";
+    const char CLEAR_COMMAND[] = "CLR"; // Clear FRAM
+    const char SET_DATE_COMMAND[] = "SET"; // Set date and time
+    const char GET_DATE_COMMAND[] = "GET"; // Get date and time
+    const char STOP_RECORDING_COMMAND[] = "STP"; // Get date and time
+
+//    const char SLEEP_COMMAND[] = "SLP"; // Enter sleep mode
+//    const char WAKE_COMMAND[] = "WAK"; // Wake from sleep mode
 
     ble_buffer[ble_buffer_index] = '\0'; // Temporarily make buffer a string to use with strcmp
 
@@ -118,9 +125,42 @@ void ble_check_command(){
         ble_data_TX(data);
         //ble_data_TX("AT+ADDR?"); // Example AT command
         ble_reset_transmission();
-    }
 
-    // Use similar else statements to check each command
+    }else if(!strcmp(CLEAR_COMMAND,ble_buffer)){
+        Clear_FRAM();
+        char data[20];
+        sprintf(data, "FRAM successfully cleared.");
+        ble_data_TX(data);
+        ble_reset_transmission();
+
+    }else if(!strcmp(SET_DATE_COMMAND,ble_buffer)){
+        char data[20];
+        sprintf(data, "Enter in format: MM/DD/YYYY HH:MM");
+
+//        ble_reset_transmission();
+//        //while(ble_buffer_index < 16); // Wait for valid number of characters
+//
+//        char date[17];
+//        memcpy(date, data, 16);
+//        date[16] = '\0';
+
+        // Validate date entry
+
+        ble_data_TX(data);
+        ble_reset_transmission();
+
+    }else if(!strcmp(GET_DATE_COMMAND,ble_buffer)){
+        char data[50];
+        sprintf(data, "The date is: %x/%x/%x %x:%x", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN);
+        ble_data_TX(data);
+        ble_reset_transmission();
+
+    }else if(!strcmp(STOP_RECORDING_COMMAND,ble_buffer)){
+        char data[20];
+        sprintf(data, "Recording paused.");
+        ble_data_TX(data);
+        ble_reset_transmission();
+    }
 }
 
 /*

@@ -85,10 +85,10 @@ void Init_ADC(){
      */
 
     // Configure Current and Voltage Measurements for ADC
-//    P5->SEL1 |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-//    P5->SEL0 |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-//    P8->SEL1 |= BIT3 | BIT5 | BIT6;
-//    P8->SEL0 |= BIT3 | BIT5 | BIT6;
+    P5->SEL1 |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    P5->SEL0 |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    P8->SEL1 |= BIT3 | BIT5 | BIT6;
+    P8->SEL0 |= BIT3 | BIT5 | BIT6;
 
     // Current measurements
     sensor_memory_ctrl_reg[8] = ADC14_MCTLN_INCH_5;
@@ -118,6 +118,8 @@ void Init_ADC(){
 }
 
 
+// Number of ADC measurements
+const int MAX_ADC = 4;
 
 /*
  * Update the ADC input to be measured
@@ -125,7 +127,7 @@ void Init_ADC(){
 void Update_ADC(){
 
     ADC14->CTL0 &= ~ADC14_CTL0_ENC; // Disable conversion
-    sampleIndex = (sampleIndex + 1) % 4; // Increment measurement to be sampled, wrap around at 3
+    sampleIndex = (sampleIndex + 1) % MAX_ADC; // Increment measurement to be sampled, wrap around at 3
     ADC14->MCTL[0] = sensor_memory_ctrl_reg[sampleIndex]; // Set measurement to be sampled
     ADC14->CTL0 |= ADC14_CTL0_ENC; // Enable conversion
 }
@@ -169,7 +171,8 @@ void Start_Recording(){
     P7->OUT |= BIT6 | BIT7; // Set IR LEDs P7.6 and P7.7 to high
 }
 
-const int TOLERANCE = 0xD00; // Sensor sensitivity
+//const int TOLERANCE = 0xD00; // Sensor sensitivity
+const int TOLERANCE = 0x450; // Sensor sensitivity
 int isCovered = 0;
 
 // Arrays to keep track of in/out sensor states (covered or clear)
@@ -219,14 +222,13 @@ void ADC14_IRQHandler(void) {
 
         // Cycle through ADC for each measurement
         int i,j=0;
-        for(i=0; i<4; i++){
+        for(i=0; i<MAX_ADC; i++){
 
             // Check for interrupt pending at sensor i
             if(ADC14->IFGR0 && sampleIndex == i){
 
-
-                // Read register
-                uint32_t data = ADC14->MEM[0];
+            // Read register
+            uint32_t data = ADC14->MEM[0];
 
             // Sensor measurement
             if(sampleIndex <= 7){
@@ -368,6 +370,10 @@ void ADC14_IRQHandler(void) {
 
                         case 16:
                             vSolarBat = data;
+                        break;
+
+                        default:
+                            fprintf(stderr, "Error\n");
                         break;
                     }
                 }
