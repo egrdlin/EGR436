@@ -154,16 +154,14 @@ void Reset_Counts(){
     inCount = 0;
 }
 
-bool recordingEnabled;
+bool recordingEnabled, BLErecordingEnabled = true;
 
 bool Get_Recording_Status(){
-    return recordingEnabled;
+    return recordingEnabled && BLErecordingEnabled;
 }
 
 void Stop_Recording(){
     recordingEnabled = false;
-    P7->OUT &= ~BIT6; // Set IR LEDs P7.6 and P7.7 to low
-    P7->OUT &= ~BIT7;
 }
 
 void Start_Recording(){
@@ -171,8 +169,17 @@ void Start_Recording(){
     P7->OUT |= BIT6 | BIT7; // Set IR LEDs P7.6 and P7.7 to high
 }
 
+
+void BLE_Stop_Recording(){
+    BLErecordingEnabled = false;
+}
+
+void BLE_Start_Recording(){
+    BLErecordingEnabled = true;
+}
+
 //const int TOLERANCE = 0xD00; // Sensor sensitivity
-const int TOLERANCE = 0x450; // Sensor sensitivity
+const int TOLERANCE = 0x250; // Sensor sensitivity
 int isCovered = 0;
 
 // Arrays to keep track of in/out sensor states (covered or clear)
@@ -188,9 +195,12 @@ uint32_t inReadingTime[8], inReadingTimeHigh[8], outReadingTime[8], outReadingTi
 uint32_t lastInReadingTime[8] = {0};
 uint32_t lastOutReadingTime[8] = {0};
 
+//const int DEBOUNCE = 120;
+//const int TIME_TOL = 150;
+
 const int DEBOUNCE = 120;
 const int TIME_TOL = 150;
-
+const int TIME_TOL_2 = 350;
 
 // ADC14 interrupt service routine
 void ADC14_IRQHandler(void) {
@@ -218,6 +228,8 @@ void ADC14_IRQHandler(void) {
 
     // Check if recording is on
     if(Get_Recording_Status()){
+
+        P7->OUT |= BIT6 | BIT7; // Set IR LEDs P7.6 and P7.7 to high
 
         uint32_t currentTime = millis(); // Current system time
         // Cycle through ADC for each measurement
@@ -265,7 +277,7 @@ void ADC14_IRQHandler(void) {
 
                                     // Check that movement was recent
                                     if(currentTime - lastOutReadingTime[j] < TIME_TOL){
-                                        if(inReadingTimeHigh[j] < 350 || outReadingTimeHigh[j] < 350){
+                                        if(inReadingTimeHigh[j] < TIME_TOL_2 || outReadingTimeHigh[j] < TIME_TOL_2){
 
                                             // Increment out count
                                             outCount++;
@@ -389,6 +401,9 @@ void ADC14_IRQHandler(void) {
         // Clear interrupt flag
         // Read register
         uint32_t data = ADC14->MEM[0];
+
+        P7->OUT &= ~BIT6; // Set IR LEDs P7.6 and P7.7 to low
+        P7->OUT &= ~BIT7;
     }
 
     // Measure next ADC channel

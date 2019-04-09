@@ -1,5 +1,7 @@
 #include "msp.h"
 #include "adc.h"
+#include "uart.h"
+#include "bluetooth.h"
 
 volatile uint32_t tick;
 
@@ -41,9 +43,11 @@ uint32_t millis(){
 // Configured to be called every millisecond
 void SysTick_Handler(void){
 //
-//        if(tick%1000 == 0){
-//            Sample_ADC();
-//        }
+        if(tick%1000 == 0){
+            //Sample_ADC();
+            uart_check_command();
+            ble_check_command();
+        }
 
     //Sample_ADC();
 

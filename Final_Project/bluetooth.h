@@ -2,6 +2,7 @@
 #define BLUETOOTH_H_
 
 #define BUFFER_SIZE 100
+#include <stdbool.h>
 
 void Init_Bluetooth();
 void ble_data_TX(char *data);
@@ -10,5 +11,6 @@ void ble_data_TX(char *data);
 void ble_check_command();
 void ble_reset_transmission();
 bool ble_comp_command(const char *checkCommand);
+bool verify_set_date(char *entry);
 
 #endif /* BLUETOOTH_H_ */

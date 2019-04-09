@@ -37,7 +37,6 @@ void Init_RTC(){
             RTC_C_CTL13_BCD |
             RTC_C_CTL13_TEV_0;
 
-    // TODO: Set date based on user input from app/computer
     RTC_C->YEAR = 0x2019;                   // Year = 0x2019
     RTC_C->DATE = (0x3 << RTC_C_DATE_MON_OFS) | // Month = 0x03 = March
             (0x13 | RTC_C_DATE_DAY_OFS);    // Day = 0x13 = 13th

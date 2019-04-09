@@ -39,8 +39,6 @@ void main(void)
         //time = millis();
 
         Sample_ADC();
-//        uart_check_command();
-//        ble_check_command();
 
     }
 

@@ -12,6 +12,8 @@ uint16_t Get_In_Count();
 bool Get_Recording_Status();
 void Stop_Recording();
 void Start_Recording();
+void BLE_Stop_Recording();
+void BLE_Start_Recording();
 
 uint32_t Get_iBatNeg();
 uint32_t Get_iBatPos();
