@@ -39,8 +39,8 @@ void Init_SPI_FRAM(void)
     // Enable eUSCIA1 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 17); /* enable IRQ 17 => EUSCIA1*/
 
-    //Get_Fram_Index();
-    Clear_FRAM();
+    Get_Fram_Index();
+    //Clear_FRAM();
 
 }
 
@@ -252,7 +252,7 @@ void Write_Address(uint32_t addr)
 }
 
 /************************** Custom Functions **************************************/
-int fram_index; // Address of FRAM memory last wrote
+uint16_t fram_index; // Address of FRAM memory last wrote
 const int index_offset = 2; // Number of bytes index is offset (due to index being written into memory)
 
 /*

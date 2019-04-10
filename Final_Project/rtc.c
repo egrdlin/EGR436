@@ -3,6 +3,8 @@
 #include "spi.h"
 #include "rtc.h"
 
+#include <stdbool.h>
+
 void Init_RTC(){
     PJ->SEL0 |= BIT0 | BIT1;                // set LFXT pin as second function
 
@@ -68,13 +70,15 @@ void Init_RTC(){
  * OFF: 9:00 PM (sunset)
  * Note: RTCHOUR register is in 24 hour format
  */
-void Check_Recording(){
-    if(RTCHOUR >= 6 && RTCHOUR < (9+12)){
+bool Check_Recording(){
+    if(RTCHOUR >= 0x06 && RTCHOUR < 0x21){
         Start_Recording();
         //__sleep();
         //__no_operation();
+        return true;
     }else{
         Stop_Recording();
+        return false;
         //__sleep();
         //SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Do not wake up on exit from ISR
         //SCB->SCR |= (SCB_SCR_SLEEPDEEP_Msk); // Set the deep sleep bit
@@ -121,7 +125,7 @@ void RTC_C_IRQHandler(void)
     // Check for minute time event interrupt
     // Check that minute is divisible by 15
     // Check that recording is enabled
-    if (RTC_C->CTL0 & RTC_C_CTL0_TEVIFG && RTCMIN % 15 == 0 && Get_Recording_Status())
+    if (RTC_C->CTL0 & RTC_C_CTL0_TEVIFG && (RTCMIN == 0x00 || RTCMIN == 0x15 || RTCMIN == 0x30 || RTCMIN == 0x45) && Get_Recording_Status())
     {
 
         // Store time and count values, reset counts afterwards
@@ -132,6 +136,11 @@ void RTC_C_IRQHandler(void)
 
     // Unlock the RTC module and clear time event interrupt flag
     RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;
+
+//    RTC_C->CTL13 = RTC_C_CTL13_HOLD |
+//            RTC_C_CTL13_MODE |
+//            RTC_C_CTL13_BCD |
+//            RTC_C_CTL13_TEV_0;
 
     // Re-lock the RTC
     RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);

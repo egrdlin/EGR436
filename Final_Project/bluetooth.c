@@ -9,6 +9,8 @@
 #include "spi.h"
 #include "timer.h"
 #include "adc.h"
+#include "spi.h"
+#include "rtc.h"
 
 static int ble_buffer_index; // Current place in buffer
 static char ble_buffer[BUFFER_SIZE];
@@ -55,6 +57,13 @@ void Init_Bluetooth(){
     // Enable eUSCIA2 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA2_IRQn) & 31);
 
+//    ble_name();
+//
+//    int k;
+
+
+//    ble_data_TX("AT");
+//    ble_data_TX("AT");
 }
 
 /*
@@ -75,6 +84,7 @@ void ble_data_TX(char *data){
 
     // Wait until the last byte is completely sent
     while(UCA2STATW & UCBUSY);
+
 }
 
 uint32_t startTime; // Time first character was entered in buffer
@@ -118,6 +128,8 @@ void EUSCIA2_IRQHandler(void)
     }
 }
 
+bool initialized = false;
+
 /*
  * Check user input for known commands
  */
@@ -136,10 +148,23 @@ void ble_check_command(){
 
     ble_buffer[ble_buffer_index] = '\0'; // Temporarily make buffer a string to use with strcmp
 
+//    if(!initialized){
+//        //ble_data_TX("AT");
+//        ble_name();
+////        do{
+////            ble_data_TX("AT");
+////            volatile unsigned int i;
+////            for (i = 20000; i > 0; i--);        // Delay
+////            ble_buffer[ble_buffer_index] = '\0'; // Temporarily make buffer a string to use with strcmp
+////        }while(strcmp("OK",ble_buffer) != 0);
+////
+//        initialized = true;
+//    }
+
     if(!strcmp(TEST_COMMAND,ble_buffer)){
         char data[20];
         float num = 3.4567;
-        sprintf(data, "This is a number %0.2f!", num);
+        sprintf(data, "\nThis is a number %0.2f!\n", num);
         ble_data_TX(data);
         //ble_data_TX("AT+ADDR?"); // Example AT command
         ble_reset_transmission();
@@ -147,7 +172,7 @@ void ble_check_command(){
     }else if(!strcmp(CLEAR_COMMAND,ble_buffer)){
         Clear_FRAM();
         char data[20];
-        sprintf(data, "FRAM successfully cleared.");
+        sprintf(data, "\nFRAM successfully cleared.\n");
         ble_data_TX(data);
         ble_reset_transmission();
 
@@ -195,15 +220,16 @@ void ble_check_command(){
         RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);
 
         char data[50];
-        sprintf(data, "Date: %x/%x/%x %x:%x:%x", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC);
+        sprintf(data, "\nDate: %x/%x/%x %02x:%02x:%02x\n", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC);
         ble_data_TX(data);
 
+        Check_Recording();
         ble_reset_transmission();
 
     }else if(!strcmp(GET_DATE_COMMAND,ble_buffer)){
         char data[50];
 
-        sprintf(data, "Date: %x/%x/%x %x:%x:%x Recording: %s In: %hu Out: %hu", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC, Get_Recording_Status() ? "On" : "Off", Get_In_Count(), Get_Out_Count());
+        sprintf(data, "\nDate: %x/%x/%x %02x:%02x:%02x \nRecording: %s \nIn: %hu Out: %hu Entries: %i\n", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC, Get_Recording_Status() ? "On" : "Off", Get_In_Count(), Get_Out_Count(), Get_Num_Entries());
 
 //        if(Get_Recording_Status()){
 //            sprintf(data, "Date: %x/%x/%x %x:%x Recording: %s In: %", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, Get_Recording_Status() ? "On" : "Off", );
@@ -218,9 +244,9 @@ void ble_check_command(){
         char data[20];
 
         if(Get_Recording_Status()){
-            sprintf(data, "Recording: On");
+            sprintf(data, "\nRecording: On\n");
         }else{
-            sprintf(data, "Recording: Off");
+            sprintf(data, "\nRecording: Off\n");
         }
 
         ble_data_TX(data);
@@ -230,9 +256,9 @@ void ble_check_command(){
         BLE_Start_Recording();
         char data[20];
         if(Get_Recording_Status()){
-            sprintf(data, "Recording: On");
+            sprintf(data, "\nRecording: On\n");
         }else{
-            sprintf(data, "Recording: Off");
+            sprintf(data, "\nRecording: Off\n");
         }
         ble_data_TX(data);
         ble_reset_transmission();
@@ -263,4 +289,16 @@ bool verify_set_date(char *entry){
     }
 
     return false;
+}
+
+void ble_sleep(){
+    ble_data_TX("AT+SLEEP");
+}
+
+void ble_wake(){
+    ble_data_TX("wakewakewakewakewakewakewakewakewakewakewakewake");
+}
+
+void ble_name(){
+    ble_data_TX("AT+NAMEBEE Counter");
 }

@@ -7,8 +7,8 @@
 void Init_Power(){
     LP_boardInit();
     disable_svsm();
-    //SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Sleep on exit from ISR
-    //__sleep(); // LPM?
+
+
 
     /******** LPM 0 *************/
     //SCB->SCR &=  ~(SCB_SCR_SLEEPDEEP_Msk);                  // Turn off Deep Sleep bit (LPM0)
@@ -18,7 +18,7 @@ void Init_Power(){
 //    PCM->CTL0 = PCM_CTL0_KEY_VAL | PCM_CTL0_LPMR__LPM3;     // LPM3. Core Voltage setting is 0;
 //    SCB->SCR |= (SCB_SCR_SLEEPDEEP_Msk);                    // Turn on Deep Sleep bit
     /***************************/
-    //__no_operation();                   // For debugger
+
 }
 
 /*

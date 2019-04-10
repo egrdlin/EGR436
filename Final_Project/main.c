@@ -23,23 +23,26 @@ void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
 
-    Init_Power();
+    //Init_Power();
     Init_RTC();
     Init_SPI_FRAM();
     Init_UART();
-    Init_Bluetooth();
     Init_ADC();
     Init_Timer();
-    //__enable_irq ( );
+    Init_Bluetooth();
 
-    //uint32_t time
-    // Might be moving this to a timer interrupt
+//    SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Sleep on exit from ISR
+//
+//    __sleep();
+//    __no_operation();                   // For debugger
+
     while (1){
 
-        //time = millis();
-
+        if(millis()%1000 == 0){
+            uart_check_command();
+            ble_check_command();
+        }
         Sample_ADC();
-
     }
 
     /****** FRAM and UART test ******/

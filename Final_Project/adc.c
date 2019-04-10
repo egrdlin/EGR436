@@ -90,18 +90,20 @@ void Init_ADC(){
     P8->SEL1 |= BIT3 | BIT5 | BIT6;
     P8->SEL0 |= BIT3 | BIT5 | BIT6;
 
-    // Current measurements
-    sensor_memory_ctrl_reg[8] = ADC14_MCTLN_INCH_5;
-    sensor_memory_ctrl_reg[9] = ADC14_MCTLN_INCH_4;
-    sensor_memory_ctrl_reg[10] = ADC14_MCTLN_INCH_3;
-    sensor_memory_ctrl_reg[11] = ADC14_MCTLN_INCH_2;
-    sensor_memory_ctrl_reg[12] = ADC14_MCTLN_INCH_1;
-    sensor_memory_ctrl_reg[13] = ADC14_MCTLN_INCH_0;
+//    // Current measurements
+//    sensor_memory_ctrl_reg[8] = ADC14_MCTLN_INCH_5;
+//    sensor_memory_ctrl_reg[9] = ADC14_MCTLN_INCH_4;
+//    sensor_memory_ctrl_reg[10] = ADC14_MCTLN_INCH_3;
+//    sensor_memory_ctrl_reg[11] = ADC14_MCTLN_INCH_2;
+//    sensor_memory_ctrl_reg[12] = ADC14_MCTLN_INCH_1;
+//    sensor_memory_ctrl_reg[13] = ADC14_MCTLN_INCH_0;
+//
+//    // Voltage measurements
+//    sensor_memory_ctrl_reg[14] = ADC14_MCTLN_INCH_22;
+//    sensor_memory_ctrl_reg[15] = ADC14_MCTLN_INCH_20;
+//    sensor_memory_ctrl_reg[16] = ADC14_MCTLN_INCH_19;
 
-    // Voltage measurements
-    sensor_memory_ctrl_reg[14] = ADC14_MCTLN_INCH_22;
-    sensor_memory_ctrl_reg[15] = ADC14_MCTLN_INCH_20;
-    sensor_memory_ctrl_reg[16] = ADC14_MCTLN_INCH_19;
+    sensor_memory_ctrl_reg[8] = ADC14_MCTLN_INCH_20;
 
 
     /***************** General ADC Configurations ************************/
@@ -115,6 +117,9 @@ void Init_ADC(){
 
     // Enable ADC conversion complete interrupt for memory register 0
     ADC14->IER0 |= ADC14_IER0_IE0;
+
+    //Sample_ADC();
+    //ADC14->MCTL[0] = sensor_memory_ctrl_reg[8];
 }
 
 
@@ -205,6 +210,8 @@ const int TIME_TOL_2 = 350;
 // ADC14 interrupt service routine
 void ADC14_IRQHandler(void) {
 
+    uint32_t data = ADC14->MEM[0];
+
     /****** Sensor test ******/
     // Also in rtc.c
     // Check sensor 0
@@ -225,6 +232,7 @@ void ADC14_IRQHandler(void) {
 //
 //    Update_ADC();
     /*************************/
+
 
     // Check if recording is on
     if(Get_Recording_Status()){
@@ -260,7 +268,6 @@ void ADC14_IRQHandler(void) {
                         }else{
                             inReading[j] = false;
                         }
-                        //inReading[j] = (data >= TOLERANCE);
 
                         // Check for change in sensor status
                         if(inReading[j] != lastInReading[j]){
@@ -347,54 +354,53 @@ void ADC14_IRQHandler(void) {
                     }
 
                 // Current or voltage measurement
+                }else if(sampleIndex == 8){
+
+                    vSolarOut = data;
+//                    switch(sampleIndex){
+//                        case 8:
+//                            iBatNeg = data;
+//                        break;
+//
+//                        case 9:
+//                            iBatPos = data;
+//                        break;
+//
+//                        case 10:
+//                            iOutNeg = data;
+//                        break;
+//
+//                        case 11:
+//                            iOutPos = data;
+//                        break;
+//
+//                        case 12:
+//                            iSolarOutNeg = data;
+//                        break;
+//
+//                        case 13:
+//                            iSolarOutPos = data;
+//                        break;
+//
+//                        case 14:
+//                            vSolarIn = data;
+//                        break;
+//
+//                        case 15:
+//                            vSolarOut = data;
+//                        break;
+//
+//                        case 16:
+//                            vSolarBat = data;
+//                        break;
+//
+//                        default:
+//                            fprintf(stderr, "Error\n");
+//                        break;
+//                    }
                 }else{
-
-                    switch(sampleIndex){
-                        case 8:
-                            iBatNeg = data;
-                        break;
-
-                        case 9:
-                            iBatPos = data;
-                        break;
-
-                        case 10:
-                            iOutNeg = data;
-                        break;
-
-                        case 11:
-                            iOutPos = data;
-                        break;
-
-                        case 12:
-                            iSolarOutNeg = data;
-                        break;
-
-                        case 13:
-                            iSolarOutPos = data;
-                        break;
-
-                        case 14:
-                            vSolarIn = data;
-                        break;
-
-                        case 15:
-                            vSolarOut = data;
-                        break;
-
-                        case 16:
-                            vSolarBat = data;
-                        break;
-
-                        default:
-                            fprintf(stderr, "Error\n");
-                        break;
-                    }
+                    fprintf(stderr, "Error\n");
                 }
-
-                //break;
-            //}
-        //}
 
 
     }else{
@@ -408,6 +414,9 @@ void ADC14_IRQHandler(void) {
 
     // Measure next ADC channel
     Update_ADC();
+
+    //Sample_ADC();
+
 }
 
 uint32_t Get_iBatNeg(){

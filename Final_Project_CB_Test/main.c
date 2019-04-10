@@ -117,7 +117,7 @@ int main()
 
                 // Get three bytes of number of entries
                 get_rx_data(10);
-                printf("RX Data: %s\n",rx_buffer);
+                //printf("RX Data: %s\n",rx_buffer);
 
                 int entries = atoi(rx_buffer);
                 printf("Entries: %i\n",entries);
@@ -127,7 +127,7 @@ int main()
                 for(i=0; i<entries; i++){
                     transmit_string("READY");
                     get_rx_data(75);
-                    printf("RX Data %i: %s\n",i,rx_buffer);
+                    //printf("RX Data %i: %s\n",i,rx_buffer);
                     fputs(rx_buffer, fptr);
                     //PurgeComm(hMasterCOM, PURGE_RXCLEAR);
 
@@ -167,7 +167,7 @@ int main()
 void transmit_string(char *data){
 
     WriteFile( hMasterCOM, data, strlen(data)+1, &rwlen, 0 );
-    printf("%s\nLength: %i, Transmitted: %i bytes\n",data,strlen(data),rwlen);
+    //printf("%s\nLength: %i, Transmitted: %i bytes\n",data,strlen(data),rwlen);
 }
 
 /*

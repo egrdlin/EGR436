@@ -13,4 +13,8 @@ void ble_reset_transmission();
 bool ble_comp_command(const char *checkCommand);
 bool verify_set_date(char *entry);
 
+void ble_sleep();
+void ble_wake();
+void ble_name();
+
 #endif /* BLUETOOTH_H_ */

@@ -43,11 +43,11 @@ uint32_t millis(){
 // Configured to be called every millisecond
 void SysTick_Handler(void){
 //
-        if(tick%1000 == 0){
-            //Sample_ADC();
-            uart_check_command();
-            ble_check_command();
-        }
+//        if(tick%1000 == 0){
+//            //Sample_ADC();
+//            uart_check_command();
+//            ble_check_command();
+//        }
 
     //Sample_ADC();
 
