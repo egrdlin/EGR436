@@ -140,6 +140,7 @@ void ble_check_command(){
     const char CLEAR_COMMAND[] = "CLR"; // Clear FRAM
     //const char SET_DATE_COMMAND[] = "SET"; // Set date and time
     const char GET_DATE_COMMAND[] = "GET"; // Get date and time and recording status
+    const char GET_ADC_COMMAND[] = "ADC"; // Get ADC status
     const char STOP_RECORDING_COMMAND[] = "STP"; // Stop data recording and turn off system
     const char START_RECORDING_COMMAND[] = "STT"; // Start data recording and turn on system (if during recording hours)
 
@@ -228,14 +229,13 @@ void ble_check_command(){
 
     }else if(!strcmp(GET_DATE_COMMAND,ble_buffer)){
         char data[50];
+        sprintf(data, "\nDate: %x/%x/%x %02x:%02x:%02x \nRecording: %s \n", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC, Get_Recording_Status() ? "On" : "Off");
+        ble_data_TX(data);
+        ble_reset_transmission();
 
-        sprintf(data, "\nDate: %x/%x/%x %02x:%02x:%02x \nRecording: %s \nIn: %hu Out: %hu Entries: %i\n", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC, Get_Recording_Status() ? "On" : "Off", Get_In_Count(), Get_Out_Count(), Get_Num_Entries());
-
-//        if(Get_Recording_Status()){
-//            sprintf(data, "Date: %x/%x/%x %x:%x Recording: %s In: %", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, Get_Recording_Status() ? "On" : "Off", );
-//        }else{
-//            sprintf(data, "Date: %x/%x/%x %x:%x Recording: Off", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN);
-//        }
+    }else if(!strcmp(GET_ADC_COMMAND,ble_buffer)){
+        char data[50];
+        sprintf(data, "\nSession In: %hu Session Out: %hu \nEntries Saved: %i\nVoltage: %lu V Current: %lu mA\n", Get_In_Count(), Get_Out_Count(), Get_Num_Entries(), Get_vSolarOut(), Get_iOut());
         ble_data_TX(data);
         ble_reset_transmission();
 
@@ -255,10 +255,12 @@ void ble_check_command(){
     }else if(!strcmp(START_RECORDING_COMMAND,ble_buffer)){
         BLE_Start_Recording();
         char data[20];
+
         if(Get_Recording_Status()){
             sprintf(data, "\nRecording: On\n");
         }else{
             sprintf(data, "\nRecording: Off\n");
+
         }
         ble_data_TX(data);
         ble_reset_transmission();

@@ -104,7 +104,8 @@ void Init_ADC(){
 //    sensor_memory_ctrl_reg[16] = ADC14_MCTLN_INCH_19;
 
     sensor_memory_ctrl_reg[8] = ADC14_MCTLN_INCH_20;
-
+    sensor_memory_ctrl_reg[9] = ADC14_MCTLN_INCH_3;
+    sensor_memory_ctrl_reg[10] = ADC14_MCTLN_INCH_2;
 
     /***************** General ADC Configurations ************************/
 
@@ -124,15 +125,44 @@ void Init_ADC(){
 
 
 // Number of ADC measurements
-const int MAX_ADC = 8;
+const int MAX_ADC = 11;
 
+
+int counter = 1000, voltageCounter=0;
 /*
  * Update the ADC input to be measured
  */
 void Update_ADC(){
 
     ADC14->CTL0 &= ~ADC14_CTL0_ENC; // Disable conversion
-    sampleIndex = (sampleIndex + 1) % MAX_ADC; // Increment measurement to be sampled, wrap around at MAX_ADC-1
+
+    //sampleIndex = (sampleIndex + 1) % MAX_ADC; // Increment measurement to be sampled, wrap around at MAX_ADC-1
+
+    //sampleIndex = 8; // Increment measurement to be sampled, wrap around at MAX_ADC-1
+    if(counter < 1000){
+        sampleIndex = (sampleIndex + 1) % 8; // Increment measurement to be sampled, wrap around at MAX_ADC-1
+        counter++;
+    }else{
+        if(voltageCounter < 3){
+            switch(voltageCounter){
+                case 0:
+                    sampleIndex = 8;
+                break;
+                case 1:
+                    sampleIndex = 9;
+                break;
+                case 2:
+                    sampleIndex = 10;
+                break;
+            }
+            voltageCounter++;
+        }else{
+            voltageCounter = 0;
+            counter = 0;
+            sampleIndex = 0;
+        }
+    }
+
     ADC14->MCTL[0] = sensor_memory_ctrl_reg[sampleIndex]; // Set measurement to be sampled
     ADC14->CTL0 |= ADC14_CTL0_ENC; // Enable conversion
 }
@@ -183,8 +213,7 @@ void BLE_Start_Recording(){
     BLErecordingEnabled = true;
 }
 
-//const int TOLERANCE = 0xD00; // Sensor sensitivity
-const int TOLERANCE = 0x250; // Sensor sensitivity
+const int TOLERANCE = 0x450; // Sensor sensitivity
 int isCovered = 0;
 
 // Arrays to keep track of in/out sensor states (covered or clear)
@@ -203,9 +232,9 @@ uint32_t lastOutReadingTime[8] = {0};
 //const int DEBOUNCE = 120;
 //const int TIME_TOL = 150;
 
-const int DEBOUNCE = 120;
-const int TIME_TOL = 150;
-const int TIME_TOL_2 = 350;
+const int DEBOUNCE = 170;
+const int TIME_TOL = 170;
+const int TIME_TOL_2 = 550;
 
 // ADC14 interrupt service routine
 void ADC14_IRQHandler(void) {
@@ -240,167 +269,125 @@ void ADC14_IRQHandler(void) {
         P7->OUT |= BIT6 | BIT7; // Set IR LEDs P7.6 and P7.7 to high
 
         uint32_t currentTime = millis(); // Current system time
-        // Cycle through ADC for each measurement
-        //int i,j=0;
-        //int i;
-        //for(i=0; i<MAX_ADC; i++){
 
-            // Check for interrupt pending at sensor i
-            //if(ADC14->IFGR0 && sampleIndex == i){
+        // Read register
+        uint32_t data = ADC14->MEM[0];
 
-            // Read register
-            uint32_t data = ADC14->MEM[0];
+        // Sensor measurement
+        if(sampleIndex <= 7){
 
-            // Sensor measurement
-            if(sampleIndex <= 7){
-
-                    int j = sampleIndex / 2;
+                int j = sampleIndex / 2;
 
 
-                    // Check if even sensor to determine if in or out measurement
-                    // In reading
-                    //sampleIndex
-                    if(sampleIndex%2){
+                // Check if even sensor to determine if in or out measurement
+                // In reading
+                //sampleIndex
+                if(sampleIndex%2){
 
-                        // Determine if covered or clear
-                        if(data >= TOLERANCE){
-                            inReading[j] = true;
-                        }else{
-                            inReading[j] = false;
-                        }
-
-                        // Check for change in sensor status
-                        if(inReading[j] != lastInReading[j]){
-
-                            // Check for debounce
-                            if(currentTime - lastInReadingTime[j] > DEBOUNCE){
-
-                                // Check if bee left sensor
-                                if(inReading[j] == false){
-
-                                    // Find how long bee was on sensor
-                                    lastInReadingTime[j] = currentTime;
-                                    inReadingTimeHigh[j] = currentTime - inReadingTime[j];
-
-                                    // Check that movement was recent
-                                    if(currentTime - lastOutReadingTime[j] < TIME_TOL){
-                                        if(inReadingTimeHigh[j] < TIME_TOL_2 || outReadingTimeHigh[j] < TIME_TOL_2){
-
-                                            // Increment out count
-                                            outCount++;
-                                            fprintf(stderr,"o\n");
-                                        }
-                                    }
-
-                                // Bee on sensor
-                                }else{
-
-                                }
-
-                            }
-                            inReadingTime[j] = currentTime;
-                            lastInReading[j] = inReading[j];
-
-                        }
-
-                    // Out reading
+                    // Determine if covered or clear
+                    if(data >= TOLERANCE){
+                        inReading[j] = true;
                     }else{
+                        inReading[j] = false;
+                    }
 
-                        // Determine if covered or clear
-                        if(data >= TOLERANCE){
-                            outReading[j] = true;
-                        }else{
-                            outReading[j] = false;
-                        }
+                    // Check for change in sensor status
+                    if(inReading[j] != lastInReading[j]){
 
-                        //outReading[j] = data >= TOLERANCE;
+                        // Check for debounce
+                        if(currentTime - lastInReadingTime[j] > DEBOUNCE){
 
-                        // Check for change in sensor status
-                        if(outReading[j] != lastOutReading[j]){
+                            // Check if bee left sensor
+                            if(inReading[j] == false){
 
-                            // Check for debounce
-                            if(currentTime - lastOutReadingTime[j] > DEBOUNCE){
+                                // Find how long bee was on sensor
+                                lastInReadingTime[j] = currentTime;
+                                inReadingTimeHigh[j] = currentTime - inReadingTime[j];
 
-                                // Check if bee left sensor
-                                if(outReading[j] == false){
+                                // Check that movement was recent
+                                if(currentTime - lastOutReadingTime[j] < TIME_TOL){
+                                    if(inReadingTimeHigh[j] < TIME_TOL_2 || outReadingTimeHigh[j] < TIME_TOL_2){
 
-                                    // Find how long bee was on sensor
-                                    lastOutReadingTime[j] = currentTime;
-                                    outReadingTimeHigh[j] = currentTime - outReadingTime[j];
-
-                                    // Check that movement was recent
-                                    if(currentTime - lastInReadingTime[j] < TIME_TOL){
-                                        if(inReadingTimeHigh[j] < 350 || outReadingTimeHigh[j] < 350){
-
-                                            // Increment in count
-                                            inCount++;
-                                            fprintf(stderr,"i\n");
-                                        }
+                                        // Increment out count
+                                        outCount++;
+                                        fprintf(stderr,"o\n");
                                     }
-
-                                // Bee on sensor
-                                }else{
-
                                 }
 
+                            // Bee on sensor
+                            }else{
+
                             }
-                            outReadingTime[j] = currentTime;
-                            lastOutReading[j] = outReading[j];
 
                         }
-
-                        j++;
+                        inReadingTime[j] = currentTime;
+                        lastInReading[j] = inReading[j];
 
                     }
 
-                // Current or voltage measurement
-                }else if(sampleIndex == 8){
-
-                    vSolarOut = data;
-//                    switch(sampleIndex){
-//                        case 8:
-//                            iBatNeg = data;
-//                        break;
-//
-//                        case 9:
-//                            iBatPos = data;
-//                        break;
-//
-//                        case 10:
-//                            iOutNeg = data;
-//                        break;
-//
-//                        case 11:
-//                            iOutPos = data;
-//                        break;
-//
-//                        case 12:
-//                            iSolarOutNeg = data;
-//                        break;
-//
-//                        case 13:
-//                            iSolarOutPos = data;
-//                        break;
-//
-//                        case 14:
-//                            vSolarIn = data;
-//                        break;
-//
-//                        case 15:
-//                            vSolarOut = data;
-//                        break;
-//
-//                        case 16:
-//                            vSolarBat = data;
-//                        break;
-//
-//                        default:
-//                            fprintf(stderr, "Error\n");
-//                        break;
-//                    }
+                // Out reading
                 }else{
-                    fprintf(stderr, "Error\n");
+
+                    // Determine if covered or clear
+                    if(data >= TOLERANCE){
+                        outReading[j] = true;
+                    }else{
+                        outReading[j] = false;
+                    }
+
+                    //outReading[j] = data >= TOLERANCE;
+
+                    // Check for change in sensor status
+                    if(outReading[j] != lastOutReading[j]){
+
+                        // Check for debounce
+                        if(currentTime - lastOutReadingTime[j] > DEBOUNCE){
+
+                            // Check if bee left sensor
+                            if(outReading[j] == false){
+
+                                // Find how long bee was on sensor
+                                lastOutReadingTime[j] = currentTime;
+                                outReadingTimeHigh[j] = currentTime - outReadingTime[j];
+
+                                // Check that movement was recent
+                                if(currentTime - lastInReadingTime[j] < TIME_TOL){
+                                    if(inReadingTimeHigh[j] < 350 || outReadingTimeHigh[j] < 350){
+
+                                        // Increment in count
+                                        inCount++;
+                                        fprintf(stderr,"i\n");
+                                    }
+                                }
+
+                            // Bee on sensor
+                            }else{
+
+                            }
+
+                        }
+                        outReadingTime[j] = currentTime;
+                        lastOutReading[j] = outReading[j];
+
+                    }
+
+                    j++;
+
                 }
+
+            // Current or voltage measurement
+            }else if(sampleIndex == 8){
+                vSolarOut = data;
+
+            }else if(sampleIndex == 9){
+                iOutNeg = data;
+
+            }else if(sampleIndex == 10){
+                iOutPos = data;
+
+            }else{
+                fprintf(stderr, "Error\n");
+            }
 
 
     }else{
@@ -419,39 +406,11 @@ void ADC14_IRQHandler(void) {
 
 }
 
-uint32_t Get_iBatNeg(){
-    return iBatNeg;
-}
-
-uint32_t Get_iBatPos(){
-    return iBatPos;
-}
-
-uint32_t Get_iOutNeg(){
-    return iOutNeg;
-}
-
-uint32_t Get_iOutPos(){
-    return iOutPos;
-}
-
-uint32_t Get_iSolarOutNeg(){
-    return iSolarOutNeg;
-}
-
-uint32_t Get_iSolarOutPos(){
-    return iSolarOutPos;
-}
-
-uint32_t Get_vSolarIn(){
-    return vSolarIn;
+uint32_t Get_iOut(){
+    return iOutPos-iOutNeg;
 }
 
 uint32_t Get_vSolarOut(){
     return vSolarOut;
-}
-
-uint32_t Get_vSolarBat(){
-    return vSolarBat;
 }
 

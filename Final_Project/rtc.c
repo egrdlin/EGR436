@@ -119,9 +119,6 @@ void RTC_C_IRQHandler(void)
     /***********************/
 
 
-    // Check whether to turn sensor system off or on
-    Check_Recording();
-
     // Check for minute time event interrupt
     // Check that minute is divisible by 15
     // Check that recording is enabled
@@ -134,13 +131,11 @@ void RTC_C_IRQHandler(void)
         Reset_Counts();
     }
 
+    // Check whether to turn sensor system off or on
+    Check_Recording();
+
     // Unlock the RTC module and clear time event interrupt flag
     RTC_C->CTL0 = (RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK |  RTC_C_CTL0_TEVIFG)) | RTC_C_KEY;
-
-//    RTC_C->CTL13 = RTC_C_CTL13_HOLD |
-//            RTC_C_CTL13_MODE |
-//            RTC_C_CTL13_BCD |
-//            RTC_C_CTL13_TEV_0;
 
     // Re-lock the RTC
     RTC_C->CTL0 = RTC_C->CTL0 & ~(RTC_C_CTL0_KEY_MASK);

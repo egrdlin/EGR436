@@ -15,14 +15,14 @@ void Start_Recording();
 void BLE_Stop_Recording();
 void BLE_Start_Recording();
 
-uint32_t Get_iBatNeg();
-uint32_t Get_iBatPos();
-uint32_t Get_iOutNeg();
-uint32_t Get_iOutPos();
-uint32_t Get_iSolarOutNeg();
-uint32_t Get_iSolarOutPos();
-uint32_t Get_vSolarIn();
+//uint32_t Get_iBatNeg();
+//uint32_t Get_iBatPos();
+//uint32_t Get_iOutNeg();
+//uint32_t Get_iOutPos();
+uint32_t Get_iOut();
+//uint32_t Get_iSolarOutPos();
+//uint32_t Get_vSolarIn();
 uint32_t Get_vSolarOut();
-uint32_t Get_vSolarBat();
+//uint32_t Get_vSolarBat();
 
 #endif

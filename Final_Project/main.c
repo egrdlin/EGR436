@@ -23,7 +23,7 @@ void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
 
-    //Init_Power();
+    Init_Power();
     Init_RTC();
     Init_SPI_FRAM();
     Init_UART();
@@ -42,7 +42,11 @@ void main(void)
             uart_check_command();
             ble_check_command();
         }
-        Sample_ADC();
+
+        if(millis()%1000 == 0){
+            Sample_ADC();
+        }
+
     }
 
     /****** FRAM and UART test ******/
