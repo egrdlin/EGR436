@@ -64,6 +64,10 @@ void Init_Bluetooth(){
 
 //    ble_data_TX("AT");
 //    ble_data_TX("AT");
+
+    // Bluetooth enable
+    P8->DIR |= BIT0; // Set 8.0 to output
+    P8->OUT |= BIT0; // Set 8.0 to high
 }
 
 /*
@@ -165,7 +169,10 @@ void ble_check_command(){
     if(!strcmp(TEST_COMMAND,ble_buffer)){
         char data[20];
         float num = 3.4567;
-        sprintf(data, "\nThis is a number %0.2f!\n", num);
+        uint32_t array[8] = {0};
+        get_adc(array);
+        //sprintf(data, "\nThis is a number %0.2f!\n", num);
+        sprintf(data, "%x %x %x %x", array[0], array[1], array[2], array[3]);
         ble_data_TX(data);
         //ble_data_TX("AT+ADDR?"); // Example AT command
         ble_reset_transmission();
@@ -228,14 +235,14 @@ void ble_check_command(){
         ble_reset_transmission();
 
     }else if(!strcmp(GET_DATE_COMMAND,ble_buffer)){
-        char data[50];
+        char data[100];
         sprintf(data, "\nDate: %x/%x/%x %02x:%02x:%02x \nRecording: %s \n", RTCMON, RTCDAY, RTCYEAR, RTCHOUR, RTCMIN, RTCSEC, Get_Recording_Status() ? "On" : "Off");
         ble_data_TX(data);
         ble_reset_transmission();
 
     }else if(!strcmp(GET_ADC_COMMAND,ble_buffer)){
-        char data[50];
-        sprintf(data, "\nSession In: %hu Session Out: %hu \nEntries Saved: %i\nVoltage: %lu V Current: %lu mA\n", Get_In_Count(), Get_Out_Count(), Get_Num_Entries(), Get_vSolarOut(), Get_iOut());
+        char data[200];
+        sprintf(data, "\nSession In: %hu Session Out: %hu \nEntries Saved: %i\nInput Voltage: %.2f V\n", Get_In_Count(), Get_Out_Count(), Get_Num_Entries(), Get_vSolarOut_Real());
         ble_data_TX(data);
         ble_reset_transmission();
 

@@ -66,8 +66,8 @@ void Init_ADC(){
     Reset_Counts();
 
     /***************** IR LEDs ************************/
-//    P7->DIR |= BIT6 | BIT7; // Set P7.6 and P7.7 to output
-//    P7->OUT |= BIT6 | BIT7; // Set P7.6 and P7.7 to high
+    P7->DIR |= BIT6 | BIT7; // Set P7.6 and P7.7 to output
+    P7->OUT |= BIT6 | BIT7; // Set P7.6 and P7.7 to high
 
     /***************** Voltage and Current Measurements ************************/
     /*
@@ -213,7 +213,9 @@ void BLE_Start_Recording(){
     BLErecordingEnabled = true;
 }
 
-const int TOLERANCE = 0x450; // Sensor sensitivity
+//const int TOLERANCE = 0x450; // Sensor sensitivity
+//const int TOLERANCE = 0x450; // Sensor sensitivity
+const int TOLERANCE = 0xE00; // Sensor sensitivity
 int isCovered = 0;
 
 // Arrays to keep track of in/out sensor states (covered or clear)
@@ -231,10 +233,17 @@ uint32_t lastOutReadingTime[8] = {0};
 
 //const int DEBOUNCE = 120;
 //const int TIME_TOL = 150;
+//const int TIME_TOL_2 = 350;
 
-const int DEBOUNCE = 170;
-const int TIME_TOL = 170;
-const int TIME_TOL_2 = 550;
+const int DEBOUNCE = 100;
+const int TIME_TOL = 100;
+const int TIME_TOL_2 = 1000;
+const int TIME_TOL_3 = 1000;
+//const int DEBOUNCE = 100;
+//const int TIME_TOL = 600;
+//const int TIME_TOL_2 = 600;
+
+uint32_t data_array[8] = {0};
 
 // ADC14 interrupt service routine
 void ADC14_IRQHandler(void) {
@@ -276,6 +285,8 @@ void ADC14_IRQHandler(void) {
         // Sensor measurement
         if(sampleIndex <= 7){
 
+            data_array[sampleIndex] = data;
+
                 int j = sampleIndex / 2;
 
 
@@ -285,7 +296,8 @@ void ADC14_IRQHandler(void) {
                 if(sampleIndex%2){
 
                     // Determine if covered or clear
-                    if(data >= TOLERANCE){
+                    //if(data >= TOLERANCE){
+                    if(data < TOLERANCE){
                         inReading[j] = true;
                     }else{
                         inReading[j] = false;
@@ -305,12 +317,12 @@ void ADC14_IRQHandler(void) {
                                 inReadingTimeHigh[j] = currentTime - inReadingTime[j];
 
                                 // Check that movement was recent
-                                if(currentTime - lastOutReadingTime[j] < TIME_TOL){
-                                    if(inReadingTimeHigh[j] < TIME_TOL_2 || outReadingTimeHigh[j] < TIME_TOL_2){
+                                if(currentTime - lastOutReadingTime[j] <= TIME_TOL){
+                                    if(inReadingTimeHigh[j] <= TIME_TOL_3 || outReadingTimeHigh[j] <= TIME_TOL_2){
 
                                         // Increment out count
                                         outCount++;
-                                        fprintf(stderr,"o\n");
+                                        //fprintf(stderr,"o\n");
                                     }
                                 }
 
@@ -329,8 +341,9 @@ void ADC14_IRQHandler(void) {
                 }else{
 
                     // Determine if covered or clear
-                    if(data >= TOLERANCE){
-                        outReading[j] = true;
+                    //if(data >= TOLERANCE){
+                    if(data < TOLERANCE){
+                    outReading[j] = true;
                     }else{
                         outReading[j] = false;
                     }
@@ -352,11 +365,11 @@ void ADC14_IRQHandler(void) {
 
                                 // Check that movement was recent
                                 if(currentTime - lastInReadingTime[j] < TIME_TOL){
-                                    if(inReadingTimeHigh[j] < 350 || outReadingTimeHigh[j] < 350){
+                                    if(inReadingTimeHigh[j] < TIME_TOL_2 || outReadingTimeHigh[j] < TIME_TOL_3){
 
                                         // Increment in count
                                         inCount++;
-                                        fprintf(stderr,"i\n");
+                                        //fprintf(stderr,"i\n");
                                     }
                                 }
 
@@ -386,7 +399,7 @@ void ADC14_IRQHandler(void) {
                 iOutPos = data;
 
             }else{
-                fprintf(stderr, "Error\n");
+                //fprintf(stderr, "Error\n");
             }
 
 
@@ -407,10 +420,21 @@ void ADC14_IRQHandler(void) {
 }
 
 uint32_t Get_iOut(){
-    return iOutPos-iOutNeg;
+    return 0;
+    //return iOutPos-iOutNeg;
 }
 
 uint32_t Get_vSolarOut(){
     return vSolarOut;
 }
 
+float Get_vSolarOut_Real(){
+    return (vSolarOut / 4095.0) * 3.3 * 2.0;
+}
+
+void get_adc(uint32_t* array){
+    int i;
+    for(i=0; i<8; i++){
+        array[i] = data_array[i];
+    }
+}

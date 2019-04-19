@@ -31,19 +31,15 @@ void main(void)
     Init_Timer();
     Init_Bluetooth();
 
-//    SCB->SCR |= SCB_SCR_SLEEPONEXIT_Msk;    // Sleep on exit from ISR
-//
-//    __sleep();
-//    __no_operation();                   // For debugger
-
     while (1){
+        uint32_t time = millis();
 
-        if(millis()%1000 == 0){
+        if(time%1000 == 0){
             uart_check_command();
             ble_check_command();
         }
 
-        if(millis()%1000 == 0){
+        if(time%50 == 0){
             Sample_ADC();
         }
 

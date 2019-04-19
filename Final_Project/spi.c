@@ -39,8 +39,8 @@ void Init_SPI_FRAM(void)
     // Enable eUSCIA1 interrupt in NVIC module
     NVIC->ISER[0] = 1 << ((EUSCIA1_IRQn) & 17); /* enable IRQ 17 => EUSCIA1*/
 
-    Get_Fram_Index();
-    //Clear_FRAM();
+    //Get_Fram_Index();
+    Clear_FRAM();
 
 }
 

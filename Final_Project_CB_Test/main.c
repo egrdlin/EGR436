@@ -116,7 +116,7 @@ int main()
                 transmit_string(entry);
 
                 // Get three bytes of number of entries
-                get_rx_data(10);
+                get_rx_data(100);
                 //printf("RX Data: %s\n",rx_buffer);
 
                 int entries = atoi(rx_buffer);
@@ -126,8 +126,8 @@ int main()
                 int i;
                 for(i=0; i<entries; i++){
                     transmit_string("READY");
-                    get_rx_data(75);
-                    //printf("RX Data %i: %s\n",i,rx_buffer);
+                    get_rx_data(200);
+                    printf("RX Data Entry %i: %s\n",i+1,rx_buffer);
                     fputs(rx_buffer, fptr);
                     //PurgeComm(hMasterCOM, PURGE_RXCLEAR);
 
@@ -175,9 +175,14 @@ void transmit_string(char *data){
  * @param data_length MAx length of data to expect (will time out if received data less than this length)
  */
 void get_rx_data(int data_length){
+    int i;
+    for(i=0; i<200; i++){
+        rx_buffer[i] = 0;
+    }
     Sleep(1000);
 
     ReadFile( hMasterCOM, rx_buffer, data_length, &rwlen, 0 );
+
 }
 
 /*
